@@ -8,6 +8,8 @@ from app.main import app
 from app.core.config import settings
 from app.core.deps import get_db, current_org_id
 from app.models.base import Base
+from app.models import models
+from unittest.mock import patch
 
 # Test database URL - override in a real setup to point to a test DB
 # Assuming the developer will set this in their local env or CI
@@ -23,11 +25,8 @@ async def setup_db():
         # In a real setup, we'd use alembic upgrade head or create_all
         # Since we use postgres specific types (CITEXT) we might need to 
         # ensure extensions are created. For this unit test setup we just rely on create_all
-        try:
-            await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
-        except Exception:
-            pass # Ignore if it fails due to missing extensions, the developer needs a proper test DB
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:
         try:

@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from pydantic import HttpUrl
 
+from app.workers.pipelines import cleanup_s3_keys
+
 from app.models.models import Project, OAuthToken, OAuthProviderEnum
 from app.schemas.schemas import ProjectCreate
 
@@ -63,8 +65,23 @@ async def delete_project(db: AsyncSession, project_id: uuid.UUID):
     # For now, we'll manually delete audits and the project to ensure no constraint errors,
     # or just delete the project if CASCADE is added later. Let's do a manual cleanup for now.
     
-    # 1. TODO: Trigger Celery task to cleanup S3 snapshots for all pages in this project.
-    # e.g., celery_app.send_task("tasks.cleanup_s3_project", args=[str(project_id)])
+    # 1. Collect all S3 keys for pages in this project
+    from app.models.models import Audit, Page
+    result = await db.execute(
+        select(Page.snapshot_key, Page.screenshot_key)
+        .join(Audit, Page.audit_id == Audit.id)
+        .where(Audit.project_id == project_id)
+        .where((Page.snapshot_key != None) | (Page.screenshot_key != None))
+    )
+    keys_to_delete = []
+    for row in result:
+        if row.snapshot_key:
+            keys_to_delete.append(row.snapshot_key)
+        if row.screenshot_key:
+            keys_to_delete.append(row.screenshot_key)
+            
+    if keys_to_delete:
+        cleanup_s3_keys.delay(keys_to_delete)
     
     # Since we don't have cascade in DDL from the previous step, we'd need to manually 
     # delete or we can just emit a delete on project and rely on the user adding cascade later.

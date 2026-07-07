@@ -19,8 +19,8 @@ async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_o
 
 # ContextVar to hold current org_id for isolation
 current_org_id: ContextVar[Optional[uuid.UUID]] = ContextVar("current_org_id", default=None)
-
-@event.listens_for(AsyncSession, "do_orm_execute")
+from sqlalchemy.orm import Session
+@event.listens_for(Session, "do_orm_execute")
 def _add_org_isolation(execute_state):
     if (
         execute_state.is_select

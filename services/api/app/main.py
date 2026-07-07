@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import auth, projects
+from app.routers import auth, projects, audits
 
 app = FastAPI(title="Rankerpilot API")
 
@@ -9,3 +9,4 @@ async def health_check():
 
 app.include_router(auth.router)
 app.include_router(projects.router)
+app.include_router(audits.router)

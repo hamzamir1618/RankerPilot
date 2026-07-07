@@ -162,6 +162,7 @@ class Finding(Base):
     
     __table_args__ = (
         Index("ix_findings_audit_id_severity", "audit_id", "severity"),
+        UniqueConstraint("audit_id", "page_id", "check_id", name="uq_finding_audit_page_check"),
     )
 
 class Baseline(Base):
