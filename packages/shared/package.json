@@ -1,0 +1,16 @@
+{
+  "name": "@rankerpilot/shared",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "generate:api-client": "openapi-typescript ../../services/api/openapi.json -o ./src/api-schema.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.4"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.5.2",
+    "typescript": "^5.0.0"
+  }
+}

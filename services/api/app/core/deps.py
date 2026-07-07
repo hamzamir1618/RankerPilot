@@ -13,8 +13,10 @@ from .config import settings
 from app.models.base import Base
 from app.models.models import User, Organization, Membership, ApiKey
 
+from sqlalchemy.pool import NullPool
+
 # Using asyncpg via SQLAlchemy async engine
-engine = create_async_engine(str(settings.DATABASE_URL), echo=settings.is_dev)
+engine = create_async_engine(str(settings.DATABASE_URL), echo=settings.is_dev, poolclass=NullPool)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # ContextVar to hold current org_id for isolation
