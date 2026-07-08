@@ -29,7 +29,7 @@ jobs:
       - name: Setup Python
         run: uv python install 3.12
       - name: Install Python dev dependencies
-        run: cd services/api && uv sync
+        run: cd services/api && uv sync --all-extras
       - name: Run Ruff (Lint)
         run: cd services/api && uv run ruff check .
       - name: Run ESLint
@@ -57,7 +57,7 @@ jobs:
       - name: Setup Python
         run: uv python install 3.12
       - name: Install Python dev dependencies
-        run: cd services/api && uv sync
+        run: cd services/api && uv sync --all-extras
       - name: Run Pyright
         run: cd services/api && uv run pyright .
       - name: Run TSC
@@ -74,7 +74,7 @@ jobs:
       - name: Setup Python
         run: uv python install 3.12
       - name: Install Python dependencies
-        run: cd services/api && uv sync
+        run: cd services/api && uv sync --all-extras
       - name: Run Pytest
         run: cd services/api && uv run pytest
       - name: Setup pnpm
