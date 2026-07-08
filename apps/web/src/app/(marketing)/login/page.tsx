@@ -26,7 +26,7 @@ export default function LoginPage() {
       })
       
       if (error) {
-        const detail = (error as any).detail;
+        const detail = (error as Record<string, unknown>).detail;
         if (typeof detail === 'string') setError(detail);
         else if (Array.isArray(detail)) setError(detail[0].msg);
         else setError("Login failed");
@@ -38,8 +38,8 @@ export default function LoginPage() {
         // Hardcoded to project ID for the demo
         router.push("/projects")
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred")
+    } catch (err: unknown) {
+      setError((err as Error).message || "An error occurred")
     }
   }
 
@@ -80,7 +80,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-slate-500">
-            Don't have an account? <a href="/register" className="text-blue-500 hover:underline">Register</a>
+            Don&apos;t have an account? <a href="/register" className="text-blue-500 hover:underline">Register</a>
           </p>
         </CardFooter>
       </Card>

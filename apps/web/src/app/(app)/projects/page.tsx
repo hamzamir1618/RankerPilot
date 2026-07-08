@@ -1,6 +1,5 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,15 +25,15 @@ export default function ProjectsPage() {
     try {
       const { data, error } = await apiClient.POST("/v1/projects/{project_id}/audits", {
         params: { path: { project_id: projectId } },
-        body: { url, mode: "single_page", page_limit: 1 } as any
+        body: { url, mode: "single_page", page_limit: 1 } as never
       })
       
-      if (data && (data as any).audit_id) {
-        router.push(`/projects/${projectId}/audits/${(data as any).audit_id}`)
+      if (data && (data as Record<string, unknown>).audit_id) {
+        router.push(`/projects/${projectId}/audits/${String((data as Record<string, unknown>).audit_id)}`)
       } else if (error) {
         alert("Failed to start audit: " + JSON.stringify(error))
       }
-    } catch (err) {
+    } catch {
       alert("Error starting audit")
     } finally {
       setLoading(false)

@@ -27,7 +27,7 @@ export default function RegisterPage() {
       })
       
       if (error) {
-        const detail = (error as any).detail;
+        const detail = (error as Record<string, unknown>).detail;
         if (typeof detail === 'string') setError(detail);
         else if (Array.isArray(detail)) setError(detail[0].msg);
         else setError("Registration failed");
@@ -38,8 +38,8 @@ export default function RegisterPage() {
         setToken(data.access_token)
         router.push("/projects")
       }
-    } catch (err: any) {
-      setError(err.message || "An error occurred")
+    } catch (err: unknown) {
+      setError((err as Error).message || "An error occurred")
     }
   }
 

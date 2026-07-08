@@ -11,7 +11,6 @@ import { FindingsTable } from "@/components/findings-table"
 
 export default function AuditPage() {
   const params = useParams()
-  const projectId = params.projectId as string
   const auditId = params.auditId as string
 
   const { data: audit, isLoading: auditLoading } = useQuery({

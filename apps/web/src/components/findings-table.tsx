@@ -6,7 +6,7 @@ import { apiClient } from "@/lib/api-client"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, ChevronRight, AlertCircle, AlertTriangle, CheckCircle, Info } from "lucide-react"
+import { ChevronDown, ChevronRight, AlertCircle, AlertTriangle, CheckCircle } from "lucide-react"
 
 export function FindingsTable({ auditId }: { auditId: string }) {
   const [cursor, setCursor] = useState<string | null>(null)
@@ -81,28 +81,28 @@ export function FindingsTable({ auditId }: { auditId: string }) {
             ) : data?.length === 0 ? (
               <TableRow><TableCell colSpan={5} className="text-center py-4 text-slate-500">No findings match your criteria.</TableCell></TableRow>
             ) : (
-              data?.map((finding: any) => (
-                <React.Fragment key={finding.id}>
-                  <TableRow className="cursor-pointer hover:bg-slate-50" onClick={() => toggleRow(finding.id)}>
+              data?.map((finding: Record<string, unknown>) => (
+                <React.Fragment key={finding.id as string}>
+                  <TableRow className="cursor-pointer hover:bg-slate-50" onClick={() => toggleRow(finding.id as string)}>
                     <TableCell>
                       {expandedRows.has(finding.id) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </TableCell>
-                    <TableCell className="font-medium">{finding.title}</TableCell>
-                    <TableCell><Badge variant="outline" className="capitalize">{finding.category}</Badge></TableCell>
+                    <TableCell className="font-medium">{finding.title as string}</TableCell>
+                    <TableCell><Badge variant="outline" className="capitalize">{finding.category as string}</Badge></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 capitalize">
-                        {getSeverityIcon(finding.severity)}
-                        {finding.severity || "None"}
+                        {getSeverityIcon(finding.severity as string | null)}
+                        {(finding.severity as string) || "None"}
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={finding.status === "pass" ? "secondary" : "destructive"}>
-                        {finding.status}
+                        {finding.status as string}
                       </Badge>
                     </TableCell>
                   </TableRow>
                   
-                  {expandedRows.has(finding.id) && (
+                  {expandedRows.has(finding.id as string) && (
                     <TableRow className="bg-slate-50/50">
                       <TableCell colSpan={5} className="p-0">
                         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-100">
@@ -116,14 +116,14 @@ export function FindingsTable({ auditId }: { auditId: string }) {
                             {finding.fix && (
                               <div>
                                 <h4 className="text-sm font-semibold text-slate-700 mb-2">How to Fix</h4>
-                                <p className="text-sm text-slate-600">{finding.fix}</p>
+                                <p className="text-sm text-slate-600">{finding.fix as string}</p>
                               </div>
                             )}
                             {finding.fix_code && (
                               <div>
                                 <h4 className="text-sm font-semibold text-slate-700 mb-2">Example Code</h4>
                                 <pre className="bg-slate-800 text-green-400 p-4 rounded-lg text-sm overflow-auto">
-                                  {finding.fix_code}
+                                  {finding.fix_code as string}
                                 </pre>
                               </div>
                             )}

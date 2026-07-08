@@ -9,7 +9,7 @@ export type AuditEvent = {
   agent?: string
   findings_count?: number
   elapsed_ms?: number
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export function useAuditEvents(auditId: string) {
