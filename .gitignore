@@ -6,3 +6,18 @@ __pycache__/
 .next/
 dist/
 docker/volumes/
+
+# Python & Testing Caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Playwright & UI
+playwright-report/
+test-results/
+
+# OS / Temporary files
+.DS_Store
+test_workflow_errors.md

@@ -18,10 +18,10 @@ TestingSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_db():
     # Setup tables
+    from sqlalchemy import text
     async with engine.begin() as conn:
-        # In a real setup, we'd use alembic upgrade head or create_all
-        # Since we use postgres specific types (CITEXT) we might need to 
-        # ensure extensions are created. For this unit test setup we just rely on create_all
+        # Since we use postgres specific types (CITEXT) we must ensure extensions are created.
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS citext"))
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
