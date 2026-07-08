@@ -125,7 +125,7 @@ async def fetch_with_playwright(url: str, pinned_ip: str, browser_context=None) 
             
     # host-resolver-rules map the hostname to the pinned IP explicitly
     parsed = urllib.parse.urlparse(url)
-    hostname = parsed.hostname
+    hostname = parsed.hostname or ""
     
     args = [f"--host-resolver-rules=MAP {hostname} {pinned_ip}"]
     
@@ -186,7 +186,7 @@ async def fetch_page(url: str, audit_id: uuid.UUID, browser_context=None) -> Pag
         parsed = urllib.parse.urlparse(current_url)
         
         # Enforce politeness
-        async with politeness_lock(parsed.hostname):
+        async with politeness_lock(parsed.hostname or ""):
             # Setup aiohttp with Pinned Resolver
             resolver = PinnedResolver(pinned_ip)
             connector = aiohttp.TCPConnector(resolver=resolver)

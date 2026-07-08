@@ -4,6 +4,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 import uuid
 
+from typing import AsyncGenerator
 from app.main import app
 from app.core.config import settings
 from app.core.deps import get_db, current_org_id
@@ -35,12 +36,12 @@ async def setup_db():
             pass
 
 @pytest_asyncio.fixture
-async def db() -> AsyncSession:
+async def db() -> AsyncGenerator[AsyncSession, None]:
     async with TestingSessionLocal() as session:
         yield session
 
 @pytest_asyncio.fixture
-async def client(db: AsyncSession) -> AsyncClient:
+async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db():
         yield db
     

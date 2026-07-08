@@ -94,7 +94,7 @@ async def test_mocked_dns_ssrf(test_server):
     
     res = await fetch_page(url, audit_id)
     assert res.status_code == 0
-    assert "Forbidden IP range" in res.error
+    assert "Forbidden IP range" in (res.error or "")
 
 @pytest.mark.asyncio
 async def test_redirect_to_private_ip(test_server, mock_validator_safe, mock_s3_upload):
@@ -104,15 +104,15 @@ async def test_redirect_to_private_ip(test_server, mock_validator_safe, mock_s3_
     # The first hop is allowed by mock_validator_safe.
     # The second hop is "http://127.0.0.1:8080/secret".
     # We need the mock to raise SSRFViolation on the second call.
-    def side_effect(target_url):
-        if "127.0.0.1" in target_url:
+    def side_effect(target_url: str):
+        if "127.0.0.1" in (target_url or ""):
             raise SSRFViolation("Forbidden IP range")
         return "127.0.0.1"
     mock_validator_safe.side_effect = side_effect
     
     res = await fetch_page(url, audit_id)
     assert res.status_code == 0
-    assert "Forbidden IP range" in res.error
+    assert "Forbidden IP range" in (res.error or "")
 
 @pytest.mark.asyncio
 async def test_robots_txt_blocking(test_server, mock_validator_safe, mock_s3_upload):
@@ -131,6 +131,7 @@ async def test_response_size_limit(test_server, mock_validator_safe, mock_s3_upl
     
     res = await fetch_page(url, audit_id)
     assert res.status_code == 200
+    assert res.error is not None
     assert "exceeded 5mb" in res.error.lower()
 
 @pytest.mark.asyncio

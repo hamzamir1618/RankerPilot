@@ -28,6 +28,8 @@ jobs:
           enable-cache: true
       - name: Setup Python
         run: uv python install 3.12
+      - name: Setup env file
+        run: cp .env.example .env
       - name: Install Python dev dependencies
         run: cd services/api && uv sync --all-extras
       - name: Run Ruff (Lint)
@@ -56,6 +58,8 @@ jobs:
           enable-cache: true
       - name: Setup Python
         run: uv python install 3.12
+      - name: Setup env file
+        run: cp .env.example .env
       - name: Install Python dev dependencies
         run: cd services/api && uv sync --all-extras
       - name: Run Pyright
@@ -73,6 +77,8 @@ jobs:
           enable-cache: true
       - name: Setup Python
         run: uv python install 3.12
+      - name: Setup env file
+        run: cp .env.example .env
       - name: Install Python dependencies
         run: cd services/api && uv sync --all-extras
       - name: Run Pytest

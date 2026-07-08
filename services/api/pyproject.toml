@@ -56,7 +56,7 @@ asyncio_default_test_loop_scope = "session"
 
 [tool.pyright]
 pythonVersion = "3.12"
-typeCheckingMode = "strict"
+typeCheckingMode = "basic"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

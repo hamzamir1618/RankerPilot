@@ -170,7 +170,7 @@ async def async_detect_industry(audit_id_str: str):
     industry = res["industry"]
     
     async with async_session_factory() as db:
-        project = await db.scalar(select(Project).where(Project.id == audit.project_id))
+        project = await db.scalar(select(Project).where(Project.id == (audit.project_id if audit else None)))
         if project:
             project.industry = industry
             await db.commit()
@@ -316,7 +316,7 @@ async def async_compute_score(audit_id_str: str):
             .where(Finding.audit_id == audit_id)
             .group_by(Finding.status)
         )
-        counts = dict(result.all())
+        counts = {row[0]: row[1] for row in result.all()}
         
         total = sum(counts.values())
         passes = counts.get(FindingStatusEnum.pass_, 0)

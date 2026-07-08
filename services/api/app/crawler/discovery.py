@@ -54,7 +54,7 @@ async def extract_sitemap_urls(sitemap_url: str, session: aiohttp.ClientSession,
         return []
         
     try:
-        async with session.get(sitemap_url, timeout=10) as response:
+        async with session.get(sitemap_url, timeout=aiohttp.ClientTimeout(total=10)) as response:
             if response.status != 200:
                 return []
             content = await response.read()

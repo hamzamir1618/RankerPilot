@@ -46,6 +46,5 @@ async def can_fetch(url: str) -> bool:
         rp.parse(robots_txt_content.splitlines())
     else:
         # Default allow all if no robots.txt
-        rp.allow_all = True
         
     return rp.can_fetch(USER_AGENT, url)
