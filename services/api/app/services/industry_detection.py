@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import Dict, Any
 
@@ -54,16 +53,6 @@ def detect_industry(ctx: AuditContext) -> Dict[str, Any]:
         # In a real implementation, we would call the Anthropics API here.
         # Stubbing for now.
         if ctx.llm_client:
-            prompt = f"""
-            Analyze the following text extracted from a website and determine its industry.
-            Choose exactly one from: saas, ecommerce, local_service, publisher, agency.
-            Respond in strict JSON format: {{"industry": "...", "confidence": 0.0, "reasoning": "..."}}
-            
-            Text:
-            {all_text[:2000]}
-            """
-            
-            # Simulated LLM response if client is a mock
             try:
                 # We expect the mock to have a method we can call, or we just return a stub if it fails
                 pass

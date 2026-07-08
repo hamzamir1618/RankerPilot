@@ -1,10 +1,10 @@
 from typing import AsyncGenerator, Optional
 from contextvars import ContextVar
 import uuid
-from fastapi import Request, Depends, HTTPException, Security
+from fastapi import Request, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import with_loader_criteria
+from sqlalchemy.orm import with_loader_criteria, Session
 from sqlalchemy import event, select
 import jwt
 import hashlib
@@ -21,7 +21,6 @@ async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_o
 
 # ContextVar to hold current org_id for isolation
 current_org_id: ContextVar[Optional[uuid.UUID]] = ContextVar("current_org_id", default=None)
-from sqlalchemy.orm import Session
 @event.listens_for(Session, "do_orm_execute")
 def _add_org_isolation(execute_state):
     if not execute_state.execution_options.get('include_loader_criteria', True):

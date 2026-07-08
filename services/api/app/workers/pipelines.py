@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert
 
-from app.workers.celery_app import celery_app
 from app.core.deps import async_session_factory
 from app.core.events import publish_event_sync
 from app.models.models import Audit, Page, Finding, AuditStatusEnum, FindingStatusEnum, Project
@@ -108,10 +107,10 @@ async def async_crawl_site(audit_id_str: str, url: str):
                 await db.commit()
                 
             if res.links:
-                for l in res.links:
+                for link in res.links:
                     if len(queued_urls) >= page_limit:
                         break
-                    enqueue(l)
+                    enqueue(link)
                     
             queue.task_done()
 

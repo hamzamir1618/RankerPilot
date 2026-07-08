@@ -4,11 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
-from pydantic import HttpUrl
 
 from app.workers.pipelines import cleanup_s3_keys
 
-from app.models.models import Project, OAuthToken, OAuthProviderEnum
+from app.models.models import Project
 from app.schemas.schemas import ProjectCreate
 
 def normalize_domain(domain: str) -> str:
@@ -47,12 +46,12 @@ async def create_project(db: AsyncSession, org_id: uuid.UUID, data: ProjectCreat
         await db.commit()
         await db.refresh(project)
         return project
-    except IntegrityError as e:
+    except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=409, detail=f"Project with domain {norm_domain} already exists in this organization")
 
 async def delete_project(db: AsyncSession, project_id: uuid.UUID):
-    project = await get_project(db, project_id)
+    await get_project(db, project_id)
     
     # Cascade delete is configured on the SQL side using ondelete="CASCADE" 
     # if it was explicitly defined in relationships. Since we are using SQLAlchemy 
@@ -71,7 +70,7 @@ async def delete_project(db: AsyncSession, project_id: uuid.UUID):
         select(Page.snapshot_key, Page.screenshot_key)
         .join(Audit, Page.audit_id == Audit.id)
         .where(Audit.project_id == project_id)
-        .where((Page.snapshot_key != None) | (Page.screenshot_key != None))
+        .where((Page.snapshot_key.is_not(None)) | (Page.screenshot_key.is_not(None)))
     )
     keys_to_delete = []
     for row in result:

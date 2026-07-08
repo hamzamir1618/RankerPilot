@@ -1,5 +1,7 @@
 import json
 import logging
+import redis
+from app.core.config import settings
 from app.core.rate_limit import redis_client
 
 logger = logging.getLogger(__name__)
@@ -25,8 +27,6 @@ async def publish_event(audit_id: str, event_type: str, payload: dict):
 # However, celery tasks can run `asyncio.run()` or we can use a sync Redis client.
 # Let's provide a synchronous publisher for Celery tasks.
 
-import redis
-from app.core.config import settings
 
 sync_redis_client = redis.from_url(str(settings.REDIS_URL), decode_responses=True)
 

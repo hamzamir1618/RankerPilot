@@ -1,7 +1,7 @@
 import urllib.parse
 import aiohttp
 import logging
-from typing import List, Set
+from typing import List
 import xml.etree.ElementTree as ET
 import tldextract
 

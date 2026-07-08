@@ -1,14 +1,17 @@
 import uuid
+import urllib.parse
+import httpx
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from pydantic import BaseModel
 
 from app.core.deps import get_db, get_current_org, get_current_user
 from app.services import project_service
 from app.schemas.schemas import ProjectCreate, ProjectResponse
 from app.models.models import Organization, OAuthToken, OAuthProviderEnum
 from app.core.crypto import encrypt_token
+from app.core.config import settings
 
 router = APIRouter(prefix="/v1/projects", tags=["Projects"])
 
@@ -46,10 +49,6 @@ async def delete_project(
 
 
 # GSC Connect Routes
-from pydantic import BaseModel
-import urllib.parse
-from app.core.config import settings
-import httpx
 
 class GscConnectResponse(BaseModel):
     url: str

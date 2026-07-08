@@ -1,12 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, Cookie
+from fastapi import APIRouter, Depends, HTTPException, Response, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from pydantic import BaseModel, EmailStr
 
-from app.core.deps import get_db, get_current_user
+from app.core.deps import get_db
 from app.core.rate_limit import limit_login, limit_register
 from app.services import auth_service
-from app.models.models import User
 
 router = APIRouter(prefix="/v1/auth", tags=["Auth"])
 

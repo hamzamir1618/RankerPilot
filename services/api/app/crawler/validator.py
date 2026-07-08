@@ -2,7 +2,6 @@ import asyncio
 import socket
 import urllib.parse
 import ipaddress
-from typing import Tuple
 
 class SSRFViolation(Exception):
     """Raised when a URL resolves to a forbidden or private IP address."""

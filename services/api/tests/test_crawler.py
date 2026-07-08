@@ -1,10 +1,8 @@
 import pytest
 import uuid
-import asyncio
 from unittest.mock import patch, AsyncMock
 from aiohttp import web
 from app.crawler.fetcher import fetch_page, SSRFViolation
-from app.crawler.validator import validate_target_url
 
 # Helper to start a local aiohttp server
 async def run_server(app):

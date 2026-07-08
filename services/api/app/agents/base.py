@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-from pydantic import BaseModel
 
 from app.models.models import FindingCategoryEnum
 from app.schemas.schemas import PageResponse

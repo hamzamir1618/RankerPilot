@@ -1,4 +1,3 @@
-import pytest
 from app.services.industry_detection import detect_industry
 from app.agents.base import AuditContext
 from app.schemas.schemas import PageResponse

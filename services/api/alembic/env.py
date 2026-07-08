@@ -1,5 +1,4 @@
 import asyncio
-from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
@@ -7,7 +6,7 @@ from alembic import context
 
 from app.core.config import settings
 from app.models.base import Base
-from app.models import *
+from app.models import *  # noqa: F403
 
 config = context.config
 config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))

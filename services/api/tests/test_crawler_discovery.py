@@ -1,4 +1,3 @@
-import pytest
 from app.crawler.discovery import normalize_url, is_internal, get_registrable_domain
 
 def test_normalize_url():

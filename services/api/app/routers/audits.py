@@ -1,14 +1,13 @@
 import uuid
-import asyncio
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.deps import get_db, get_current_user
 from app.models.models import Audit, Project, Finding, Page, AuditStatusEnum, AuditModeEnum
-from app.schemas.schemas import AuditCreate, AuditResponse, FindingResponse, PageResponse
+from app.schemas.schemas import AuditResponse, FindingResponse, PageResponse
 from app.workers.pipelines import start_audit_pipeline
 from app.crawler.validator import validate_target_url, SSRFViolation
 from app.core.rate_limit import redis_client

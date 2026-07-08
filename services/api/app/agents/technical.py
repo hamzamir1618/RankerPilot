@@ -1,5 +1,4 @@
 from typing import List
-from bs4 import BeautifulSoup
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum, FindingStatusEnum, FindingSeverityEnum

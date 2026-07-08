@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from app.core.config import settings
 from datetime import datetime, timezone
 from app.models.models import Organization, User, Membership, Project, Audit, Page, Finding, RoleEnum, AuditStatusEnum, FindingStatusEnum
+from app.models.base import Base
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,7 +13,6 @@ logger = logging.getLogger(__name__)
 engine = create_async_engine(str(settings.DATABASE_URL), echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-from app.models.base import Base
 
 async def seed_data():
     if settings.ENV != "dev":
@@ -176,13 +176,13 @@ async def seed_data():
             
             await db.commit()
             
-            logger.info(f"Successfully seeded database!")
+            logger.info("Successfully seeded database!")
             logger.info(f"User ID: {user_id}")
             logger.info(f"Org ID: {org_id}")
             logger.info(f"Project ID: {project_id}")
             logger.info(f"Audit ID: {audit_id}")
-            logger.info(f"Run the following to start the audit pipeline:")
-            logger.info(f"  from app.workers.pipelines import start_audit_pipeline")
+            logger.info("Run the following to start the audit pipeline:")
+            logger.info("  from app.workers.pipelines import start_audit_pipeline")
             logger.info(f"  start_audit_pipeline(uuid.UUID('{audit_id}'), 'https://example.com', 'single_page')")
             
         except Exception as e:

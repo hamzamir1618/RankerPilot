@@ -1,16 +1,12 @@
-import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-import uuid
 
 from typing import AsyncGenerator
 from app.main import app
 from app.core.config import settings
-from app.core.deps import get_db, current_org_id
+from app.core.deps import get_db
 from app.models.base import Base
-from app.models import models
-from unittest.mock import patch
 
 # Test database URL - override in a real setup to point to a test DB
 # Assuming the developer will set this in their local env or CI

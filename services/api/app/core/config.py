@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import PostgresDsn, RedisDsn, SecretStr, computed_field
 

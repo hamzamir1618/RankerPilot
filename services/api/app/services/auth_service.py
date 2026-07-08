@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException
 import httpx
-from pydantic import EmailStr
 
 from app.core.config import settings
 from app.core.rate_limit import redis_client

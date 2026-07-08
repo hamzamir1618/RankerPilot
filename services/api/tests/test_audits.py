@@ -1,15 +1,10 @@
 import pytest
 import uuid
-import json
-import asyncio
-from httpx import AsyncClient, ASGITransport
 from unittest.mock import patch, AsyncMock
 from sqlalchemy import select
 
-from app.main import app
 from app.models.models import Audit, Page, Finding, Project, User, Organization, Membership, RoleEnum
 from app.workers.pipelines import async_crawl_site, async_run_agent, async_aggregate_findings, async_compute_score, async_finalize_audit
-from app.core.rate_limit import redis_client
 
 import pytest_asyncio
 

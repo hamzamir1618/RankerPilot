@@ -1,5 +1,4 @@
 import uuid
-import json
 import logging
 import urllib.parse
 import asyncio
@@ -111,7 +110,7 @@ async def fetch_with_playwright(url: str, pinned_ip: str, browser_context=None) 
             client = await page.context.new_cdp_session(page)
             await client.send("Performance.enable")
             
-            response = await page.goto(url, timeout=30000, wait_until="networkidle")
+            await page.goto(url, timeout=30000, wait_until="networkidle")
             content = await page.content()
             html_bytes = content.encode('utf-8')
             
@@ -146,7 +145,7 @@ async def fetch_with_playwright(url: str, pinned_ip: str, browser_context=None) 
         await client.send("Performance.enable")
         
         try:
-            response = await page.goto(url, timeout=30000, wait_until="networkidle")
+            await page.goto(url, timeout=30000, wait_until="networkidle")
             content = await page.content()
             html_bytes = content.encode('utf-8')
             

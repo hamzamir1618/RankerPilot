@@ -1,11 +1,11 @@
 import datetime
 from sqlalchemy import (
-    Column, Integer, String, Boolean, Text, Numeric, BigInteger,
-    ForeignKey, Table, UniqueConstraint, Index, func, text,
+    Integer, String, Boolean, Text, Numeric, BigInteger,
+    ForeignKey, UniqueConstraint, Index, func, text,
     LargeBinary
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY, CITEXT
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 import enum
 import uuid
