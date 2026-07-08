@@ -1,20 +1,23 @@
 import pytest
+import uuid
 from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_org_isolation(client: AsyncClient):
+    email_a = f"usera_{uuid.uuid4().hex}@example.com"
     # 1. Register User A
     user_a_res = await client.post("/v1/auth/register", json={
-        "email": "usera@example.com",
+        "email": email_a,
         "password": "pwd"
-    })
+    }, headers={"X-Forwarded-For": f"10.0.1.{uuid.uuid4().hex[:4]}"})
     token_a = user_a_res.json()["access_token"]
     
+    email_b = f"userb_{uuid.uuid4().hex}@example.com"
     # 2. Register User B
     user_b_res = await client.post("/v1/auth/register", json={
-        "email": "userb@example.com",
+        "email": email_b,
         "password": "pwd"
-    })
+    }, headers={"X-Forwarded-For": f"10.0.1.{uuid.uuid4().hex[:4]}"})
     token_b = user_b_res.json()["access_token"]
     
     # 3. User A creates a project
@@ -54,11 +57,12 @@ async def test_org_isolation(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_duplicate_domain_in_same_org(client: AsyncClient):
+    email = f"org1_{uuid.uuid4().hex}@example.com"
     # Register
     user_res = await client.post("/v1/auth/register", json={
-        "email": "org1@example.com",
+        "email": email,
         "password": "pwd"
-    })
+    }, headers={"X-Forwarded-For": f"10.0.1.{uuid.uuid4().hex[:4]}"})
     token = user_res.json()["access_token"]
     
     # Create project 1

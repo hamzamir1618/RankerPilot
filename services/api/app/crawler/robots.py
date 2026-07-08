@@ -23,11 +23,11 @@ async def can_fetch(url: str) -> bool:
     Caches the robots.txt content in Redis for 1 hour.
     """
     parsed = urllib.parse.urlparse(url)
-    if not parsed.hostname:
+    if not parsed.netloc:
         return False
         
-    robots_url = f"{parsed.scheme}://{parsed.hostname}/robots.txt"
-    cache_key = f"robots_txt:{parsed.hostname}"
+    robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+    cache_key = f"robots_txt:{parsed.netloc}"
     
     robots_txt_content = await redis_client.get(cache_key)
     

@@ -13,6 +13,7 @@ celery_app.conf.update(
         "app.workers.pipelines.crawl_site": {"queue": "crawl"},
         "app.workers.pipelines.run_agent": {"queue": "agents"},
         "app.workers.pipelines.detect_industry": {"queue": "agents"},
+        "app.workers.pipelines.run_agents_chord": {"queue": "agents"},
         "app.workers.pipelines.aggregate_findings": {"queue": "reports"},
         "app.workers.pipelines.compute_score": {"queue": "reports"},
         "app.workers.pipelines.finalize_audit": {"queue": "reports"},

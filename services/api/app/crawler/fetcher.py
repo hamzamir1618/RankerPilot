@@ -2,6 +2,7 @@ import uuid
 import json
 import logging
 import urllib.parse
+import asyncio
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Tuple
 
@@ -100,7 +101,28 @@ def needs_js_render(html: bytes) -> bool:
         
     return False
 
-async def fetch_with_playwright(url: str, pinned_ip: str) -> Tuple[bytes, Dict[str, Any]]:
+async def fetch_with_playwright(url: str, pinned_ip: str, browser_context=None) -> Tuple[bytes, Dict[str, Any]]:
+    # If a context is provided from a pool, we use it directly (note: cannot dynamically apply host rules to existing context)
+    if browser_context:
+        page = await browser_context.new_page()
+        try:
+            # Enable CDP for performance metrics
+            client = await page.context.new_cdp_session(page)
+            await client.send("Performance.enable")
+            
+            response = await page.goto(url, timeout=30000, wait_until="networkidle")
+            content = await page.content()
+            html_bytes = content.encode('utf-8')
+            
+            perf_metrics = await client.send("Performance.getMetrics")
+            metrics_dict = {m['name']: m['value'] for m in perf_metrics['metrics']}
+            
+            return html_bytes, metrics_dict
+        except PlaywrightError as e:
+            raise Exception(f"Playwright error: {str(e)}")
+        finally:
+            await page.close()
+            
     # host-resolver-rules map the hostname to the pinned IP explicitly
     parsed = urllib.parse.urlparse(url)
     hostname = parsed.hostname
@@ -138,7 +160,7 @@ async def fetch_with_playwright(url: str, pinned_ip: str) -> Tuple[bytes, Dict[s
             await browser.close()
 
 
-async def fetch_page(url: str, audit_id: uuid.UUID) -> PageResult:
+async def fetch_page(url: str, audit_id: uuid.UUID, browser_context=None) -> PageResult:
     current_url = url
     hops = 0
     max_hops = 5
@@ -210,7 +232,7 @@ async def fetch_page(url: str, audit_id: uuid.UUID) -> PageResult:
     if needs_js_render(html_content):
         try:
             # We must re-validate IP just in case? We already have pinned_ip for final_url from the loop
-            html_content, lab_vitals = await fetch_with_playwright(final_url, pinned_ip)
+            html_content, lab_vitals = await fetch_with_playwright(final_url, pinned_ip, browser_context=browser_context)
             rendered = True
         except Exception as e:
             # Fallback to the raw HTML if playwright fails

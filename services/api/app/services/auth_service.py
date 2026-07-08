@@ -159,6 +159,8 @@ async def register_user(db: AsyncSession, email: str, password: str):
     )
     db.add(org)
     
+    await db.flush()
+    
     # Create membership
     membership = Membership(
         user_id=user_id,
@@ -256,6 +258,8 @@ async def google_oauth_login(db: AsyncSession, code: str, code_verifier: str, re
                 name=f"Personal Org ({email})"
             )
             db.add(org)
+            
+            await db.flush()
             
             membership = Membership(
                 user_id=user_id,

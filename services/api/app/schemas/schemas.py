@@ -55,7 +55,7 @@ class ProjectBase(BaseModel):
     gsc_connected: bool = False
 
 class ProjectCreate(ProjectBase):
-    org_id: uuid.UUID
+    pass
 
 class ProjectResponse(ProjectBase, ORMBase):
     id: uuid.UUID

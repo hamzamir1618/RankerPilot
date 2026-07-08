@@ -10,7 +10,7 @@ from app.crawler.validator import validate_target_url
 async def run_server(app):
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, 'localhost', 0)
+    site = web.TCPSite(runner, '127.0.0.1', 0)
     await site.start()
     return runner, site.name
 
@@ -51,16 +51,17 @@ async def test_server():
     # Return base URL. Note: host_port might be something like '127.0.0.1:PORT'. 
     # But wait, 127.0.0.1 will trigger the SSRF protection!
     # To test locally, we must mock the validator for normal tests, OR 
-    # allow localhost just for the test. We will mock the validator to return a dummy safe IP 
-    # and bypass the exception, except for SSRF specific tests.
+    # bypass the exception, except for SSRF specific tests.
     
-    yield f"http://{host_port}"
+    # site.name is typically 'http://127.0.0.1:port' or similar
+    server_url = host_port if host_port.startswith("http") else f"http://{host_port}"
+    yield server_url
     await runner.cleanup()
 
 @pytest.fixture
 def mock_validator_safe():
     with patch("app.crawler.fetcher.validate_target_url", new_callable=AsyncMock) as m:
-        m.return_value = "8.8.8.8" # Dummy safe IP for tests
+        m.return_value = "127.0.0.1" # Safe loopback for tests
         yield m
 
 @pytest.fixture
@@ -106,7 +107,7 @@ async def test_redirect_to_private_ip(test_server, mock_validator_safe, mock_s3_
     def side_effect(target_url):
         if "127.0.0.1" in target_url:
             raise SSRFViolation("Forbidden IP range")
-        return "8.8.8.8"
+        return "127.0.0.1"
     mock_validator_safe.side_effect = side_effect
     
     res = await fetch_page(url, audit_id)
@@ -130,7 +131,7 @@ async def test_response_size_limit(test_server, mock_validator_safe, mock_s3_upl
     
     res = await fetch_page(url, audit_id)
     assert res.status_code == 200
-    assert "exceeded 5MB" in res.error.lower()
+    assert "exceeded 5mb" in res.error.lower()
 
 @pytest.mark.asyncio
 async def test_playwright_fallback(test_server, mock_validator_safe, mock_s3_upload):

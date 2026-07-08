@@ -24,6 +24,9 @@ current_org_id: ContextVar[Optional[uuid.UUID]] = ContextVar("current_org_id", d
 from sqlalchemy.orm import Session
 @event.listens_for(Session, "do_orm_execute")
 def _add_org_isolation(execute_state):
+    if not execute_state.execution_options.get('include_loader_criteria', True):
+        return
+
     if (
         execute_state.is_select
         and not execute_state.is_column_load
@@ -35,7 +38,8 @@ def _add_org_isolation(execute_state):
                 with_loader_criteria(
                     Base,
                     lambda cls: cls.org_id == org_id if hasattr(cls, "org_id") else True,
-                    include_aliases=True
+                    include_aliases=True,
+                    track_closure_variables=False
                 )
             )
 
