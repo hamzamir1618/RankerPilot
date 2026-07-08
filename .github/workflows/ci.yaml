@@ -104,6 +104,8 @@ jobs:
         run: cp .env.example .env
       - name: Install Python dependencies
         run: cd services/api && uv sync --all-extras
+      - name: Install Playwright Browsers
+        run: cd services/api && uv run playwright install chromium
       - name: Run Pytest
         run: cd services/api && uv run pytest
       - name: Setup pnpm
