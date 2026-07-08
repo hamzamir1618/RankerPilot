@@ -37,7 +37,7 @@ def _add_org_isolation(execute_state):
             execute_state.statement = execute_state.statement.options(
                 with_loader_criteria(
                     Base,
-                    lambda cls: cls.org_id == org_id if hasattr(cls, "org_id") else True,
+                    lambda cls: cls.org_id == org_id if hasattr(cls, "org_id") else True,  # type: ignore
                     include_aliases=True,
                     track_closure_variables=False
                 )
@@ -116,7 +116,6 @@ async def get_current_org(
         key_hash = hashlib.sha256(secret.encode()).digest()
         
         # Bypass org isolation for this query since we are authenticating the org itself
-        from sqlalchemy.orm import ExecutionOptions
         
         # We need the API key
         result = await db.execute(

@@ -17,7 +17,8 @@ async def resolve_hostname(hostname: str) -> str:
         if not info:
             raise SSRFViolation(f"Could not resolve hostname: {hostname}")
         # Return the first resolved IP
-        return info[0][4][0]
+        ip, port = info[0][4][0], info[0][4][1]
+        return f"{ip}:{port}" if port else str(ip)
     except socket.gaierror as e:
         raise SSRFViolation(f"DNS resolution failed for {hostname}: {e}")
 

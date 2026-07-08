@@ -17,7 +17,7 @@ from app.crawler.s3_client import upload_html
 
 logger = logging.getLogger(__name__)
 
-class PinnedResolver(aiohttp.abc.AbstractResolver):
+class PinnedResolver(aiohttp.abc.AbstractResolver):  # type: ignore
     def __init__(self, ip: str):
         self.ip = ip
         
@@ -57,7 +57,8 @@ def extract_metadata(html: bytes) -> Dict[str, Any]:
     
     # Meta Description
     meta_desc_tag = soup.find('meta', attrs={'name': 'description'})
-    meta_description = meta_desc_tag.get('content', '').strip() if meta_desc_tag else None
+    meta_content = meta_desc_tag.get('content', '') if meta_desc_tag else ''
+    meta_description = str(meta_content[0] if isinstance(meta_content, list) else meta_content).strip() if meta_desc_tag else None
     
     # H1
     h1s = [h1.get_text(strip=True) for h1 in soup.find_all('h1')]
@@ -92,7 +93,7 @@ def needs_js_render(html: bytes) -> bool:
         return True
         
     html_str = html.decode('utf-8', errors='ignore')
-    if '<div id="__next">' in html_str or 'ng-app' in html_str or '<div id="root">' in html_str:
+    if '__next' in html_str or 'ng-app' in html_str or 'root' in html_str:
         return True
         
     main = soup.find('main')
@@ -192,8 +193,8 @@ async def fetch_page(url: str, audit_id: uuid.UUID, browser_context=None) -> Pag
             connector = aiohttp.TCPConnector(resolver=resolver)
             
             try:
-                async with aiohttp.ClientSession(connector=connector, headers={"User-Agent": USER_AGENT}) as session:
-                    async with session.get(current_url, allow_redirects=False, timeout=15) as response:
+                async with aiohttp.ClientSession(connector=connector, timeout=aiohttp.ClientTimeout(total=15), headers={"User-Agent": USER_AGENT}) as session:
+                    async with session.get(current_url, allow_redirects=False, timeout=aiohttp.ClientTimeout(total=15)) as response:
                         status_code = response.status
                         if status_code in (301, 302, 303, 307, 308):
                             # Follow redirect manually

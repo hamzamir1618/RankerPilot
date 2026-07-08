@@ -81,7 +81,7 @@ async def delete_project(db: AsyncSession, project_id: uuid.UUID):
             keys_to_delete.append(row.screenshot_key)
             
     if keys_to_delete:
-        cleanup_s3_keys.delay(keys_to_delete)
+        cleanup_s3_keys.delay(keys_to_delete)  # type: ignore
     
     # Since we don't have cascade in DDL from the previous step, we'd need to manually 
     # delete or we can just emit a delete on project and rely on the user adding cascade later.

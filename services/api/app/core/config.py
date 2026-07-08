@@ -51,4 +51,4 @@ class Settings(BaseSettings):
     def is_dev(self) -> bool:
         return self.ENV.lower() == "development"
 
-settings = Settings()
+settings = Settings()  # type: ignore

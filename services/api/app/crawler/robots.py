@@ -10,7 +10,7 @@ async def fetch_robots_txt(domain_url: str) -> Optional[str]:
     """Fetch robots.txt for a given domain using aiohttp."""
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(domain_url, headers={"User-Agent": USER_AGENT}, timeout=5) as response:
+            async with session.get(domain_url, headers={"User-Agent": USER_AGENT}, timeout=aiohttp.ClientTimeout(total=5)) as response:
                 if response.status == 200:
                     return await response.text()
     except Exception:
@@ -43,8 +43,10 @@ async def can_fetch(url: str) -> bool:
     rp = urllib.robotparser.RobotFileParser()
     rp.set_url(robots_url)
     if robots_txt_content:
-        rp.parse(robots_txt_content.splitlines())
+        content_str = robots_txt_content.decode('utf-8') if isinstance(robots_txt_content, bytes) else robots_txt_content
+        rp.parse(content_str.splitlines())
     else:
         # Default allow all if no robots.txt
+        return True
         
     return rp.can_fetch(USER_AGENT, url)

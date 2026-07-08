@@ -198,14 +198,14 @@ def run_agents_chord(self, result: dict):
     roster = roster_map.get(industry, ["technical"])
     
     c = chord(
-        group(run_agent.s({"audit_id": audit_id_str, "industry": industry}, agent_id) for agent_id in roster),
-        aggregate_findings.s(audit_id_str)
+        group(run_agent.s({"audit_id": audit_id_str, "industry": industry}, agent_id) for agent_id in roster),  # type: ignore
+        aggregate_findings.s(audit_id_str)  # type: ignore
     )
     
     pipeline = chain(
         c,
-        compute_score.s(),
-        finalize_audit.s()
+        compute_score.s(),  # type: ignore
+        finalize_audit.s()  # type: ignore
     )
     
     raise self.replace(pipeline)
@@ -360,9 +360,9 @@ def start_audit_pipeline(audit_id: uuid.UUID, url: str, mode: str):
     audit_id_str = str(audit_id)
     
     audit_pipeline = chain(
-        crawl_site.s(audit_id_str, url),
-        detect_industry.s(),
-        run_agents_chord.s()
+        crawl_site.s(audit_id_str, url),  # type: ignore
+        detect_industry.s(),  # type: ignore
+        run_agents_chord.s()  # type: ignore
     )
     audit_pipeline.apply_async()
 

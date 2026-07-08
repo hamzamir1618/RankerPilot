@@ -15,7 +15,7 @@ async def upload_html(audit_id: uuid.UUID, url: str, html_content: bytes):
     
     compressed_content = gzip.compress(html_content)
     
-    async with session.client(
+    async with session.client(  # type: ignore
         's3',
         endpoint_url=settings.S3_ENDPOINT,
         aws_access_key_id=settings.S3_ACCESS_KEY,
