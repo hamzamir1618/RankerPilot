@@ -45,7 +45,11 @@ class PageResult:
     snapshot_key: Optional[str] = None
     screenshot_key: Optional[str] = None
     lab_vitals: Optional[Dict[str, Any]] = None
-    links: Optional[List[str]] = None
+    links: Optional[List[Dict[str, Any]]] = None
+    content_text: Optional[str] = None
+    headings: Optional[List[Dict[str, Any]]] = None
+    images: Optional[List[Dict[str, Any]]] = None
+    json_ld: Optional[List[Dict[str, Any]]] = None
     error: Optional[str] = None
 
 def extract_metadata(html: bytes) -> Dict[str, Any]:
@@ -59,8 +63,13 @@ def extract_metadata(html: bytes) -> Dict[str, Any]:
     meta_content = meta_desc_tag.get('content', '') if meta_desc_tag else ''
     meta_description = str(meta_content[0] if isinstance(meta_content, list) else meta_content).strip() if meta_desc_tag else None
     
-    # H1
+    # Headings
     h1s = [h1.get_text(strip=True) for h1 in soup.find_all('h1')]
+    
+    all_headings = []
+    for h in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+        level = int(h.name[1])
+        all_headings.append({"level": level, "text": h.get_text(strip=True)[:200]})
     
     # Word count (visible text)
     # Strip scripts and styles
@@ -71,14 +80,44 @@ def extract_metadata(html: bytes) -> Dict[str, Any]:
     word_count = len(words)
     
     # Links
-    links = [a.get('href') for a in soup.find_all('a', href=True)]
+    links = []
+    for a in soup.find_all('a', href=True):
+        links.append({"href": a.get('href'), "text": a.get_text(strip=True)[:100]})
+        
+    # Images
+    images = []
+    for img in soup.find_all('img'):
+        images.append({
+            "src": img.get('src', ''),
+            "alt": img.get('alt'),
+            "width": img.get('width'),
+            "height": img.get('height'),
+            "loading": img.get('loading')
+        })
+        
+    # JSON-LD
+    json_ld = []
+    import json
+    for script in soup.find_all('script', type='application/ld+json'):
+        try:
+            data = json.loads(script.get_text())
+            if isinstance(data, list):
+                json_ld.extend(data)
+            else:
+                json_ld.append(data)
+        except Exception:
+            pass
     
     return {
         "title": title,
         "meta_description": meta_description,
         "h1": h1s,
         "word_count": word_count,
-        "links": links
+        "links": links,
+        "content_text": text,
+        "headings": all_headings,
+        "images": images,
+        "json_ld": json_ld
     }
 
 def needs_js_render(html: bytes) -> bool:

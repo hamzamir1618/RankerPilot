@@ -28,7 +28,8 @@ dependencies = [
     "lxml>=5.2.1",
     "aiohttp>=3.9.3",
     "sse-starlette>=2.1.0",
-    "tldextract>=5.1.2"
+    "tldextract>=5.1.2",
+    "PyYAML>=6.0.1"
 ]
 
 [project.optional-dependencies]

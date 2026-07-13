@@ -13,6 +13,8 @@ class AuditContext:
     robots_txt: Optional[str]
     sitemap_urls: List[str]
     industry: str
+    token_budget: int = 16000
+    root_url: str = ""
     
     # Stubbed clients
     llm_client: Any = None

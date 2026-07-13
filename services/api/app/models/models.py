@@ -138,6 +138,11 @@ class Page(Base):
     snapshot_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     screenshot_key: Mapped[str | None] = mapped_column(Text, nullable=True)
     lab_vitals: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    content_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    links: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    headings: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    images: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    json_ld: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
     fetched_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
     
     __table_args__ = (

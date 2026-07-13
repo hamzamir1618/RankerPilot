@@ -94,6 +94,11 @@ class PageBase(BaseModel):
     snapshot_key: Optional[str] = None
     screenshot_key: Optional[str] = None
     lab_vitals: Optional[Dict[str, Any]] = None
+    content_text: Optional[str] = None
+    links: Optional[List[Dict[str, Any]]] = None
+    headings: Optional[List[Dict[str, Any]]] = None
+    images: Optional[List[Dict[str, Any]]] = None
+    json_ld: Optional[List[Dict[str, Any]]] = None
 
 class PageCreate(PageBase):
     audit_id: uuid.UUID

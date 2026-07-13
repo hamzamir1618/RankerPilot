@@ -16,6 +16,15 @@ from app.crawler.fetcher import fetch_page
 from app.schemas.schemas import PageResponse
 from app.agents.base import AuditContext
 from app.agents.technical import TechnicalAgent
+from app.agents.sitemap_robots import SitemapRobotsAgent
+from app.agents.security_headers import SecurityHeadersAgent
+from app.agents.onpage import OnPageAgent
+from app.agents.performance import PerformanceAgent
+from app.agents.images import ImagesAgent
+from app.agents.schema_agent import SchemaAgent
+from app.agents.content import ContentAgent
+from app.agents.geo import GeoAgent
+from app.agents.local import LocalAgent
 
 from app.crawler.discovery import extract_sitemap_urls, normalize_url, is_internal, get_registrable_domain
 from app.services.industry_detection import detect_industry as detect_industry_service
@@ -23,7 +32,16 @@ from playwright.async_api import async_playwright
 
 # Registry of agents
 AGENTS = {
-    "technical": TechnicalAgent()
+    "technical": TechnicalAgent(),
+    "sitemap_robots": SitemapRobotsAgent(),
+    "security_headers": SecurityHeadersAgent(),
+    "onpage": OnPageAgent(),
+    "performance": PerformanceAgent(),
+    "images": ImagesAgent(),
+    "schema_agent": SchemaAgent(),
+    "content": ContentAgent(),
+    "geo": GeoAgent(),
+    "local": LocalAgent()
 }
 
 def get_db_session() -> AsyncSession:
@@ -101,7 +119,9 @@ async def async_crawl_site(audit_id_str: str, url: str):
                     id=uuid.uuid4(), audit_id=audit_id, url=res.url, status_code=res.status_code,
                     rendered=res.rendered, title=res.title, meta_description=res.meta_description,
                     h1=res.h1, word_count=res.word_count, snapshot_key=res.snapshot_key,
-                    screenshot_key=res.screenshot_key, lab_vitals=res.lab_vitals
+                    screenshot_key=res.screenshot_key, lab_vitals=res.lab_vitals,
+                    content_text=res.content_text, links=res.links,
+                    headings=res.headings, images=res.images, json_ld=res.json_ld
                 )
                 db.add(page)
                 await db.commit()
@@ -186,15 +206,16 @@ def run_agents_chord(self, result: dict):
     audit_id_str = result["audit_id"]
     industry = result["industry"]
     
-    # Map industry to roster (for now all map to technical until more agents exist)
+    # Map industry to roster
+    base_roster = ["technical", "sitemap_robots", "security_headers", "onpage", "performance", "images", "schema_agent", "content", "geo"]
     roster_map = {
-        "saas": ["technical"],
-        "ecommerce": ["technical"],
-        "local_service": ["technical"],
-        "publisher": ["technical"],
-        "agency": ["technical"]
+        "saas": base_roster,
+        "ecommerce": base_roster,
+        "local_service": base_roster + ["local"],
+        "publisher": base_roster,
+        "agency": base_roster
     }
-    roster = roster_map.get(industry, ["technical"])
+    roster = roster_map.get(industry, base_roster)
     
     c = chord(
         group(run_agent.s({"audit_id": audit_id_str, "industry": industry}, agent_id) for agent_id in roster),  # type: ignore
@@ -222,14 +243,25 @@ async def async_run_agent(agent_id: str, ctx_dict: dict):
             pages_db = result.scalars().all()
             pages_resp = [PageResponse.model_validate(p) for p in pages_db]
             
+            audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
+            root_url = audit.root_url if audit else ""
+
+        site_graph = {}
+        for p in pages_resp:
+            out_links = []
+            if p.links:
+                out_links = [link_obj.get("href") for link_obj in p.links if isinstance(link_obj, dict) and link_obj.get("href")]
+            site_graph[p.url] = out_links
+
         ctx = AuditContext(
             audit_id=audit_id_str,
             pages=pages_resp,
-            site_graph={},
+            site_graph=site_graph,
             robots_txt=None,
             sitemap_urls=[],
             industry=ctx_dict.get("industry", "saas")
         )
+        ctx.root_url = root_url
         
         agent = AGENTS.get(agent_id)
         if not agent:
