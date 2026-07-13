@@ -42,7 +42,7 @@ class OnPageAgent(BaseAgent):
                     "status": "fail",
                     "severity": "high",
                     "category": self.category.value,
-                    "title": f"Missing Title",
+                    "title": "Missing Title",
                     "page_id": str(page.id)
                 })
 
@@ -65,7 +65,7 @@ class OnPageAgent(BaseAgent):
                     "status": "fail",
                     "severity": "medium",
                     "category": self.category.value,
-                    "title": f"Missing Meta Description",
+                    "title": "Missing Meta Description",
                     "page_id": str(page.id)
                 })
 
@@ -77,7 +77,7 @@ class OnPageAgent(BaseAgent):
                     "status": "fail",
                     "severity": "high",
                     "category": self.category.value,
-                    "title": f"Missing H1 tag",
+                    "title": "Missing H1 tag",
                     "page_id": str(page.id)
                 })
             elif len(h1s) > 1:
@@ -95,7 +95,7 @@ class OnPageAgent(BaseAgent):
                     "check_id": "h1_valid",
                     "status": "pass",
                     "category": self.category.value,
-                    "title": f"Valid H1 tag",
+                    "title": "Valid H1 tag",
                     "page_id": str(page.id)
                 })
 
@@ -104,8 +104,8 @@ class OnPageAgent(BaseAgent):
                 last_level = 0
                 skipped = []
                 for h in page.headings:
-                    level = h.get("level")
-                    if last_level > 0 and level > last_level + 1:
+                    level = h.get("level", 0)
+                    if level and last_level > 0 and level > last_level + 1:
                         skipped.append(f"H{last_level} -> H{level}")
                     last_level = level
                 
@@ -115,7 +115,7 @@ class OnPageAgent(BaseAgent):
                         "status": "fail",
                         "severity": "medium",
                         "category": self.category.value,
-                        "title": f"Skipped heading levels",
+                        "title": "Skipped heading levels",
                         "evidence": {"skipped": skipped},
                         "page_id": str(page.id)
                     })
@@ -124,7 +124,7 @@ class OnPageAgent(BaseAgent):
                         "check_id": "heading_hierarchy_valid",
                         "status": "pass",
                         "category": self.category.value,
-                        "title": f"Valid heading hierarchy",
+                        "title": "Valid heading hierarchy",
                         "page_id": str(page.id)
                     })
 

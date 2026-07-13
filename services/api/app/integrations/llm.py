@@ -2,8 +2,10 @@ import os
 import json
 import httpx
 import logging
-from typing import Dict, Any, Optional, Type
+from typing import Optional, Type, TypeVar
 from pydantic import BaseModel, ValidationError
+
+T = TypeVar("T", bound=BaseModel)
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +133,7 @@ class LLMClient:
                 return json.loads(args)
             return {}
 
-    async def analyze(self, system: str, prompt: str, pages_data: list, budget: int, schema_model: Type[BaseModel]) -> Optional[BaseModel]:
+    async def analyze(self, system: str, prompt: str, pages_data: list, budget: int, schema_model: Type[T]) -> Optional[T]:
         safe_data = truncate_to_budget(pages_data, budget)
         
         # Prompt injection hardening

@@ -20,4 +20,7 @@ test-results/
 
 # OS / Temporary files
 .DS_Store
-test_workflow_errors.md
+test-workflow-errors.md
+type-check-errors.md
+lint-workflow-errors.md
+*-errors.md

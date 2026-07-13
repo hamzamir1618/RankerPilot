@@ -1,5 +1,6 @@
 import logging
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
@@ -45,39 +46,32 @@ class LocalAgent(BaseAgent):
         {combined_text[:6000]}
         """
         
-        schema_out = {
-            "type": "object",
-            "properties": {
-                "nap_found": {"type": "boolean"},
-                "nap_details": {"type": "string"},
-                "gbp_link_found": {"type": "boolean"},
-                "service_areas": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                "issues": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["nap_found", "gbp_link_found", "service_areas", "issues"]
-        }
+        class LocalSEOAnalysis(BaseModel):
+            nap_found: bool
+            nap_details: Optional[str]
+            gbp_link_found: bool
+            service_areas: List[str]
+            issues: List[str]
         
         try:
             response = await llm.analyze(
+                system="You are a Local SEO expert.",
                 prompt=prompt,
-                schema=schema_out,
-                agent_id=self.id,
-                budget=ctx.token_budget
+                pages_data=[],
+                budget=ctx.token_budget,
+                schema_model=LocalSEOAnalysis
             )
             
-            if response.get("nap_found"):
+            if not response:
+                raise ValueError("LLM returned None")
+                
+            if response.nap_found:
                 findings.append({
                     "check_id": "local_nap_present",
                     "status": "pass",
                     "category": self.category.value,
                     "title": "NAP (Name, Address, Phone) Found",
-                    "evidence": {"details": response.get("nap_details", "")}
+                    "evidence": {"details": response.nap_details or ""}
                 })
             else:
                 findings.append({
@@ -89,7 +83,7 @@ class LocalAgent(BaseAgent):
                     "fix": "Ensure business Name, Address, and Phone number are clearly visible on the site."
                 })
                 
-            if response.get("gbp_link_found"):
+            if response.gbp_link_found:
                 findings.append({
                     "check_id": "gbp_link_present",
                     "status": "pass",
@@ -106,7 +100,7 @@ class LocalAgent(BaseAgent):
                     "fix": "Link to your Google Business Profile / Google Maps listing to improve Local SEO."
                 })
                 
-            areas = response.get("service_areas", [])
+            areas = response.service_areas
             if areas:
                 findings.append({
                     "check_id": "service_areas_found",
@@ -124,7 +118,7 @@ class LocalAgent(BaseAgent):
                     "fix": "Consider adding a dedicated Service Areas page or section."
                 })
                 
-            issues = response.get("issues", [])
+            issues = response.issues
             if issues:
                 findings.append({
                     "check_id": "local_seo_issues",

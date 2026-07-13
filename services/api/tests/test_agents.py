@@ -3,6 +3,7 @@ from app.agents.sitemap_robots import SitemapRobotsAgent
 from app.agents.base import AuditContext
 from app.schemas.schemas import PageResponse
 import uuid
+from datetime import datetime, timezone
 
 @pytest.mark.asyncio
 async def test_sitemap_robots_agent():
@@ -15,7 +16,8 @@ async def test_sitemap_robots_agent():
         rendered=False,
         headings=[],
         images=[],
-        links=[]
+        links=[],
+        fetched_at=datetime.now(timezone.utc)
     )
     
     ctx = AuditContext(

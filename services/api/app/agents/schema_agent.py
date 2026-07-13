@@ -1,6 +1,7 @@
 import logging
 import json
 from typing import List
+from pydantic import BaseModel
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
@@ -42,28 +43,24 @@ class SchemaAgent(BaseAgent):
             {payload}
             """
             
-            schema_out = {
-                "type": "object",
-                "properties": {
-                    "is_valid": {"type": "boolean"},
-                    "errors": {
-                        "type": "array",
-                        "items": {"type": "string"}
-                    },
-                    "corrected_json": {"type": "string", "description": "The fully corrected JSON-LD payload if there were errors."}
-                },
-                "required": ["is_valid", "errors", "corrected_json"]
-            }
+            class SchemaValidationResult(BaseModel):
+                is_valid: bool
+                errors: List[str]
+                corrected_json: str
             
             try:
                 response = await llm.analyze(
+                    system="You are an expert SEO JSON-LD validator.",
                     prompt=prompt,
-                    schema=schema_out,
-                    agent_id=self.id,
-                    budget=ctx.token_budget
+                    pages_data=[],
+                    budget=ctx.token_budget,
+                    schema_model=SchemaValidationResult
                 )
                 
-                if response.get("is_valid"):
+                if not response:
+                    raise ValueError("LLM returned None")
+                    
+                if response.is_valid:
                     findings.append({
                         "check_id": "schema_valid",
                         "status": "pass",
@@ -78,8 +75,8 @@ class SchemaAgent(BaseAgent):
                         "severity": "medium",
                         "category": self.category.value,
                         "title": "JSON-LD Schema has errors or missing properties",
-                        "evidence": {"errors": response.get("errors")},
-                        "fix": "Use the corrected JSON-LD:\n" + response.get("corrected_json", ""),
+                        "evidence": {"errors": response.errors},
+                        "fix": "Use the corrected JSON-LD:\n" + response.corrected_json,
                         "page_id": str(page.id)
                     })
                     

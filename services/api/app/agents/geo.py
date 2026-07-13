@@ -1,6 +1,7 @@
 import logging
 import aiohttp
 from typing import List
+from pydantic import BaseModel
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
@@ -37,7 +38,7 @@ class GeoAgent(BaseAgent):
         
         if robots_content:
             blocked_bots = []
-            lines = [l.strip().lower() for l in robots_content.splitlines()]
+            lines = [line_str.strip().lower() for line_str in robots_content.splitlines()]
             current_agent = None
             for line in lines:
                 if line.startswith("user-agent:"):
@@ -53,7 +54,7 @@ class GeoAgent(BaseAgent):
                     "status": "warn",
                     "severity": "medium",
                     "category": self.category.value,
-                    "title": f"AI Crawlers blocked in robots.txt",
+                    "title": "AI Crawlers blocked in robots.txt",
                     "evidence": {"blocked_bots": list(set(blocked_bots))},
                     "fix": "Consider allowing AI bots to be included in LLM training and AI Overviews."
                 })
@@ -97,29 +98,28 @@ class GeoAgent(BaseAgent):
             Look for clear definitions, bulleted lists, and concise answers to common questions.
             
             Title: {target_page.title}
-            Content: {target_page.content_text[:3000]}
+            Content: {(target_page.content_text or "")[:3000]}
             """
             
-            schema_out = {
-                "type": "object",
-                "properties": {
-                    "readiness_score": {"type": "integer", "description": "Score from 1 to 100"},
-                    "strengths": {"type": "array", "items": {"type": "string"}},
-                    "weaknesses": {"type": "array", "items": {"type": "string"}},
-                    "recommendations": {"type": "array", "items": {"type": "string"}}
-                },
-                "required": ["readiness_score", "strengths", "weaknesses", "recommendations"]
-            }
+            class AIOverviewResult(BaseModel):
+                readiness_score: int
+                strengths: List[str]
+                weaknesses: List[str]
+                recommendations: List[str]
             
             try:
                 response = await llm.analyze(
+                    system="You are an AI Overview (AIO) optimizer.",
                     prompt=prompt,
-                    schema=schema_out,
-                    agent_id=self.id,
-                    budget=ctx.token_budget
+                    pages_data=[],
+                    budget=ctx.token_budget,
+                    schema_model=AIOverviewResult
                 )
                 
-                score = response.get("readiness_score", 50)
+                if not response:
+                    raise ValueError("LLM returned None")
+                    
+                score = response.readiness_score
                 status = "pass" if score >= 80 else ("warn" if score >= 50 else "fail")
                 
                 findings.append({
@@ -129,10 +129,10 @@ class GeoAgent(BaseAgent):
                     "category": self.category.value,
                     "title": f"AI Overview Readiness: {score}/100",
                     "evidence": {
-                        "strengths": response.get("strengths"),
-                        "weaknesses": response.get("weaknesses")
+                        "strengths": response.strengths,
+                        "weaknesses": response.weaknesses
                     },
-                    "fix": "\n".join(response.get("recommendations", [])),
+                    "fix": "\n".join(response.recommendations),
                     "page_id": str(target_page.id)
                 })
             except Exception as e:

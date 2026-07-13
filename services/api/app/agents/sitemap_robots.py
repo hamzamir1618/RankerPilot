@@ -1,8 +1,7 @@
 import logging
-import urllib.parse
 import xml.etree.ElementTree as ET
 import aiohttp
-from typing import List, Dict, Any
+from typing import List
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum

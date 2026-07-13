@@ -1,5 +1,6 @@
 import logging
-from typing import List
+from typing import List, Literal
+from pydantic import BaseModel
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
@@ -11,7 +12,7 @@ def _get_shingles(text: str, k: int = 5) -> set:
     words = text.lower().split()
     return set(" ".join(words[i:i+k]) for i in range(len(words) - k + 1))
 
-def jaccard_similarity(text1: str, text2: str) -> float:
+def jaccard_similarity(text1: str | None, text2: str | None) -> float:
     if not text1 or not text2:
         return 0.0
     s1 = _get_shingles(text1)
@@ -57,19 +58,11 @@ class ContentAgent(BaseAgent):
         pages_with_content.sort(key=lambda x: x.word_count or 0, reverse=True)
         top_pages = pages_with_content[:3]
         
-        schema_out = {
-            "type": "object",
-            "properties": {
-                "eeat_score": {"type": "integer", "description": "Score from 1 to 10"},
-                "intent_match": {"type": "string", "enum": ["Informational", "Transactional", "Navigational"]},
-                "analysis": {"type": "string"},
-                "improvements": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["eeat_score", "intent_match", "analysis", "improvements"]
-        }
+        class EEATResult(BaseModel):
+            eeat_score: int
+            intent_match: Literal["Informational", "Transactional", "Navigational"]
+            analysis: str
+            improvements: List[str]
         
         for page in top_pages:
             prompt = f"""
@@ -78,18 +71,22 @@ class ContentAgent(BaseAgent):
             Industry context: {ctx.industry}
             
             Title: {page.title}
-            Content (truncated): {page.content_text[:3000]}
+            Content (truncated): {(page.content_text or "")[:3000]}
             """
             
             try:
                 response = await llm.analyze(
+                    system="You are a Google Quality Rater evaluating E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness).",
                     prompt=prompt,
-                    schema=schema_out,
-                    agent_id=self.id,
-                    budget=ctx.token_budget
+                    pages_data=[],
+                    budget=ctx.token_budget,
+                    schema_model=EEATResult
                 )
                 
-                score = response.get("eeat_score", 5)
+                if not response:
+                    raise ValueError("LLM returned None")
+                    
+                score = response.eeat_score
                 status = "pass" if score >= 7 else ("warn" if score >= 5 else "fail")
                 
                 findings.append({
@@ -99,10 +96,10 @@ class ContentAgent(BaseAgent):
                     "category": self.category.value,
                     "title": f"E-E-A-T Score: {score}/10",
                     "evidence": {
-                        "intent": response.get("intent_match"),
-                        "analysis": response.get("analysis")
+                        "intent": response.intent_match,
+                        "analysis": response.analysis
                     },
-                    "fix": "\n".join(response.get("improvements", [])),
+                    "fix": "\n".join(response.improvements),
                     "page_id": str(page.id)
                 })
             except Exception as e:

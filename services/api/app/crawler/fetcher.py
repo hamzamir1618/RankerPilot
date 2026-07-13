@@ -53,7 +53,7 @@ class PageResult:
     error: Optional[str] = None
 
 def extract_metadata(html: bytes) -> Dict[str, Any]:
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html.decode('utf-8', errors='replace'), 'lxml')
     
     # Title
     title = soup.title.string.strip() if soup.title and soup.title.string else None
@@ -122,7 +122,7 @@ def extract_metadata(html: bytes) -> Dict[str, Any]:
 
 def needs_js_render(html: bytes) -> bool:
     """Heuristics to determine if a page needs JS rendering."""
-    soup = BeautifulSoup(html, 'lxml')
+    soup = BeautifulSoup(html.decode('utf-8', errors='replace'), 'lxml')
     text_len = len(soup.get_text(strip=True))
     html_len = len(html)
     
