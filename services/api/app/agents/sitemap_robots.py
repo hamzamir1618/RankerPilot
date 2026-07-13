@@ -64,7 +64,7 @@ class SitemapRobotsAgent(BaseAgent):
             findings.append({
                 "check_id": "robots_txt_missing",
                 "status": "fail",
-                "severity": "MEDIUM",
+                "severity": "medium",
                 "category": self.category.value,
                 "title": "Missing robots.txt",
                 "evidence": {"robots_url": robots_url}
@@ -74,7 +74,7 @@ class SitemapRobotsAgent(BaseAgent):
                 findings.append({
                     "check_id": "robots_txt_syntax",
                     "status": "fail",
-                    "severity": "HIGH",
+                    "severity": "high",
                     "category": self.category.value,
                     "title": "Invalid robots.txt Syntax",
                     "evidence": {"robots_url": robots_url, "content_preview": robots_content[:200]}
@@ -97,7 +97,7 @@ class SitemapRobotsAgent(BaseAgent):
             findings.append({
                 "check_id": "sitemap_missing",
                 "status": "fail",
-                "severity": "MEDIUM",
+                "severity": "medium",
                 "category": self.category.value,
                 "title": "Missing sitemap.xml at root",
                 "evidence": {"sitemap_url": sitemap_url}
@@ -117,7 +117,7 @@ class SitemapRobotsAgent(BaseAgent):
                 findings.append({
                     "check_id": "sitemap_syntax",
                     "status": "fail",
-                    "severity": "HIGH",
+                    "severity": "high",
                     "category": self.category.value,
                     "title": "Invalid sitemap.xml Syntax",
                     "evidence": {"sitemap_url": sitemap_url, "content_preview": sitemap_content[:200]}
@@ -144,8 +144,8 @@ class SitemapRobotsAgent(BaseAgent):
         if orphan_urls:
             findings.append({
                 "check_id": "orphan_pages",
-                "status": "FAIL",
-                "severity": "HIGH",
+                "status": "fail",
+                "severity": "high",
                 "category": self.category.value,
                 "title": f"Found {len(orphan_urls)} Orphan Pages",
                 "evidence": {"orphan_urls": orphan_urls[:10]},
@@ -154,7 +154,7 @@ class SitemapRobotsAgent(BaseAgent):
         else:
             findings.append({
                 "check_id": "orphan_pages",
-                "status": "PASS",
+                "status": "pass",
                 "category": self.category.value,
                 "title": "No orphan pages found",
                 "evidence": {}
