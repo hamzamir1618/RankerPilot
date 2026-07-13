@@ -1,6 +1,7 @@
 # RankerPilot
 
 RankerPilot is an AI-powered SEO Auditing Platform. It features a modern Next.js React frontend, a high-performance FastAPI Python backend, and a Celery-based background task runner for executing distributed web crawling and AI agent evaluation pipelines.
+It includes a robust Weighted Scoring Engine and an intelligent Action Plan prioritized by an internal PageRank algorithm.
 
 This repository is organized into a monorepo structure:
 - `/apps/web`: Next.js 15 App Router frontend (TailwindCSS, shadcn/ui).
@@ -122,3 +123,14 @@ Run the tests using:
 cd services/api
 uv run pytest tests/ -v
 ```
+
+## 7. Deployment (Railway)
+
+A `Dockerfile` is provided in `services/api/` specifically optimized for deployment on Railway (or similar PaaS providers).
+It automatically installs `uv`, configures the FastAPI web server, and downloads the required Playwright Chromium engine.
+
+To deploy the API:
+1. Connect your repository to Railway.
+2. Set the Root Directory to `services/api` (or let Railway use the Dockerfile).
+3. The default start command will run `uvicorn app.main:app`.
+4. To run the Celery worker, create a second service from the same repo, and set the Custom Start Command to: `celery -A app.workers.celery_app worker --loglevel=info -Q crawl,agents,reports`.

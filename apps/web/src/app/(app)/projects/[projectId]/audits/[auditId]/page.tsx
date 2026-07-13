@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
 import { FindingsTable } from "@/components/findings-table"
+import { ActionPlan } from "@/components/action-plan"
 
 export default function AuditPage() {
   const params = useParams()
@@ -81,9 +82,14 @@ export default function AuditPage() {
         </div>
       )}
 
+      {/* Top Priorities / Action Plan */}
+      {audit.status === "done" && (
+        <ActionPlan auditId={auditId} />
+      )}
+
       {/* Findings Table */}
       <div>
-        <h2 className="text-2xl font-bold mb-4">Findings</h2>
+        <h2 className="text-2xl font-bold mb-4">All Findings</h2>
         <FindingsTable auditId={auditId} />
       </div>
     </div>

@@ -143,6 +143,7 @@ class Page(Base):
     headings: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
     images: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
     json_ld: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    internal_pagerank: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     fetched_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
     
     __table_args__ = (

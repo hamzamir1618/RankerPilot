@@ -11,6 +11,9 @@ from sqlalchemy.dialects.postgresql import insert
 from app.core.deps import async_session_factory
 from app.core.events import publish_event_sync
 from app.models.models import Audit, Page, Finding, AuditStatusEnum, FindingStatusEnum, Project
+from app.scoring.weights import get_category_weights
+from app.scoring.aggregate import calculate_category_score, calculate_site_score
+from app.scoring.action_plan import compute_internal_pagerank
 
 from app.crawler.fetcher import fetch_page
 from app.schemas.schemas import PageResponse
@@ -342,26 +345,57 @@ async def async_compute_score(audit_id_str: str):
     audit_id = uuid.UUID(audit_id_str)
     
     async with async_session_factory() as db:
-        result = await db.execute(
-            select(Finding.status, func.count(Finding.id))
-            .where(Finding.audit_id == audit_id)
-            .group_by(Finding.status)
-        )
-        counts = {row[0]: row[1] for row in result.all()}
-        
-        total = sum(counts.values())
-        passes = counts.get(FindingStatusEnum.pass_, 0)
-        
-        score = (passes / total * 100) if total > 0 else 0
+        # 1. Compute PageRank
+        result = await db.execute(select(Page).where(Page.audit_id == audit_id))
+        pages_db = result.scalars().all()
         
         audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
-        if audit:
-            audit.score = score
-            audit.category_scores = {"technical": score} # stub
+        if not audit:
+            return audit_id_str
+            
+        project = await db.scalar(select(Project).where(Project.id == audit.project_id))
+        industry = project.industry if project else None
+        
+        site_graph = {}
+        for p in pages_db:
+            out_links = []
+            if p.links:
+                out_links = [normalize_url(link_obj.get("href"), audit.root_url) for link_obj in p.links if isinstance(link_obj, dict) and link_obj.get("href")]
+            site_graph[p.url] = out_links
+            
+        pagerank_scores = compute_internal_pagerank(site_graph)
+        for p in pages_db:
+            p.internal_pagerank = pagerank_scores.get(p.url, 0.0)
+            
+        # 2. Compute Category and Site Scores
+        findings_result = await db.execute(select(Finding).where(Finding.audit_id == audit_id))
+        findings_db = findings_result.scalars().all()
+        
+        cat_stats = {}
+        for f in findings_db:
+            cat = f.category.value
+            if cat not in cat_stats:
+                cat_stats[cat] = {"passes": 0, "severity_counts": {}}
+                
+            if f.status == FindingStatusEnum.pass_:
+                cat_stats[cat]["passes"] += 1
+            elif f.status == FindingStatusEnum.fail and f.severity:
+                sev = f.severity.value
+                cat_stats[cat]["severity_counts"][sev] = cat_stats[cat]["severity_counts"].get(sev, 0) + 1
+                
+        category_scores = {}
+        for cat, stats in cat_stats.items():
+            category_scores[cat] = calculate_category_score(stats["passes"], stats["severity_counts"])
+            
+        weights = get_category_weights(industry)
+        site_score = calculate_site_score(category_scores, weights)
+        
+        audit.score = site_score
+        audit.category_scores = category_scores
             
         await db.commit()
         
-    publish_event_sync(audit_id_str, "score.computed", {"score": float(score)})
+    publish_event_sync(audit_id_str, "score.computed", {"score": float(site_score)})
     return audit_id_str
 
 @shared_task(bind=True, name="app.workers.pipelines.compute_score")

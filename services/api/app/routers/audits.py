@@ -11,6 +11,8 @@ from app.schemas.schemas import AuditResponse, FindingResponse, PageResponse
 from app.workers.pipelines import start_audit_pipeline
 from app.crawler.validator import validate_target_url, SSRFViolation
 from app.core.rate_limit import redis_client
+from sqlalchemy import case, desc
+from app.crawler.discovery import normalize_url
 
 router = APIRouter(prefix="/v1", tags=["audits"])
 
@@ -74,10 +76,39 @@ async def get_findings(
     severity: Optional[str] = None,
     category: Optional[str] = None,
     cursor: Optional[str] = None,
+    sort: Optional[str] = "action_plan",
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user)
 ):
     stmt = select(Finding).where(Finding.audit_id == audit_id)
+    
+    if sort == "action_plan":
+        stmt = stmt.outerjoin(Page, Finding.page_id == Page.id)
+        
+        severity_case = case(
+            (Finding.severity == "critical", 0),
+            (Finding.severity == "high", 1),
+            (Finding.severity == "medium", 2),
+            (Finding.severity == "low", 3),
+            else_=4
+        )
+        effort_case = case(
+            (Finding.effort == "immediate", 0),
+            (Finding.effort == "one_week", 1),
+            (Finding.effort == "one_month", 2),
+            (Finding.effort == "backlog", 3),
+            else_=4
+        )
+        
+        stmt = stmt.order_by(
+            severity_case,
+            desc(Page.internal_pagerank),
+            effort_case,
+            Finding.id
+        )
+    else:
+        stmt = stmt.order_by(Finding.id)
+        
     if severity:
         stmt = stmt.where(Finding.severity == severity)
     if category:
@@ -85,9 +116,103 @@ async def get_findings(
     if cursor:
         stmt = stmt.where(Finding.id > uuid.UUID(cursor))
         
-    stmt = stmt.order_by(Finding.id).limit(100)
+    stmt = stmt.limit(100)
     result = await db.execute(stmt)
     return result.scalars().all()
+
+@router.get("/audits/{audit_id}/action-plan")
+async def get_action_plan(
+    audit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    # Fetch top findings ordered by action plan criteria
+    stmt = select(Finding).outerjoin(Page, Finding.page_id == Page.id).where(
+        Finding.audit_id == audit_id,
+        Finding.status == "fail"
+    )
+    
+    severity_case = case(
+        (Finding.severity == "critical", 0),
+        (Finding.severity == "high", 1),
+        (Finding.severity == "medium", 2),
+        (Finding.severity == "low", 3),
+        else_=4
+    )
+    effort_case = case(
+        (Finding.effort == "immediate", 0),
+        (Finding.effort == "one_week", 1),
+        (Finding.effort == "one_month", 2),
+        (Finding.effort == "backlog", 3),
+        else_=4
+    )
+    
+    stmt = stmt.order_by(severity_case, desc(Page.internal_pagerank), effort_case, Finding.id).limit(50)
+    result = await db.execute(stmt)
+    findings = result.scalars().all()
+    
+    return [FindingResponse.model_validate(f).model_dump() for f in findings]
+
+@router.get("/audits/{audit_id}/diff/{other_id}")
+async def get_audit_diff(
+    audit_id: uuid.UUID,
+    other_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    # audit_id is newer, other_id is older
+    newer = await db.scalar(select(Audit).where(Audit.id == audit_id))
+    older = await db.scalar(select(Audit).where(Audit.id == other_id))
+    
+    if not newer or not older:
+        raise HTTPException(status_code=404, detail="Audit not found")
+        
+    score_delta = (newer.score or 0.0) - (older.score or 0.0)
+    
+    # Load pages to get URLs
+    newer_pages = await db.execute(select(Page).where(Page.audit_id == audit_id))
+    older_pages = await db.execute(select(Page).where(Page.audit_id == other_id))
+    
+    newer_url_map = {p.id: normalize_url(p.url, newer.root_url) for p in newer_pages.scalars().all()}
+    older_url_map = {p.id: normalize_url(p.url, older.root_url) for p in older_pages.scalars().all()}
+    
+    # Load findings
+    newer_findings = await db.execute(select(Finding).where(Finding.audit_id == audit_id))
+    older_findings = await db.execute(select(Finding).where(Finding.audit_id == other_id))
+    
+    def make_key(f, url_map):
+        url = url_map.get(f.page_id, "") if f.page_id else ""
+        return (f.check_id, url)
+        
+    newer_f_map = {make_key(f, newer_url_map): f for f in newer_findings.scalars().all()}
+    older_f_map = {make_key(f, older_url_map): f for f in older_findings.scalars().all()}
+    
+    resolved = []
+    new_findings = []
+    unchanged = []
+    
+    # Check what was in older
+    for key, old_f in older_f_map.items():
+        if old_f.status == "fail":
+            new_f = newer_f_map.get(key)
+            if not new_f or new_f.status != "fail":
+                resolved.append(FindingResponse.model_validate(old_f).model_dump())
+            else:
+                unchanged.append(FindingResponse.model_validate(new_f).model_dump())
+                
+    # Check what is in newer but wasn't failing in older
+    for key, new_f in newer_f_map.items():
+        if new_f.status == "fail":
+            old_f = older_f_map.get(key)
+            if not old_f or old_f.status != "fail":
+                new_findings.append(FindingResponse.model_validate(new_f).model_dump())
+                
+    return {
+        "score_delta": round(score_delta, 1),
+        "resolved": resolved,
+        "new": new_findings,
+        "unchanged": unchanged
+    }
 
 @router.get("/audits/{audit_id}/pages", response_model=List[PageResponse])
 async def get_pages(
