@@ -1,4 +1,3 @@
-import pytest
 from hypothesis import given, strategies as st
 from typing import List, Dict
 import math
@@ -6,7 +5,7 @@ import math
 from app.scoring.aggregate import calculate_category_score, calculate_site_score
 from app.scoring.weights import get_category_weights, WEIGHTS, LOCAL_SERVICE_WEIGHTS
 from app.scoring.action_plan import get_action_plan_sort_key
-from app.models.models import FindingStatusEnum, IndustryEnum
+from app.models.models import IndustryEnum
 
 def test_severity_multipliers():
     """Verify that different severities produce correctly weighted fail scores."""

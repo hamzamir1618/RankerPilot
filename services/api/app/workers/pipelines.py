@@ -360,7 +360,7 @@ async def async_compute_score(audit_id_str: str):
         for p in pages_db:
             out_links = []
             if p.links:
-                out_links = [normalize_url(link_obj.get("href"), audit.root_url) for link_obj in p.links if isinstance(link_obj, dict) and link_obj.get("href")]
+                out_links = [normalize_url(str(link_obj.get("href")), audit.root_url) for link_obj in p.links if isinstance(link_obj, dict) and link_obj.get("href")]
             site_graph[p.url] = out_links
             
         pagerank_scores = compute_internal_pagerank(site_graph)
@@ -373,14 +373,15 @@ async def async_compute_score(audit_id_str: str):
         
         cat_stats = {}
         for f in findings_db:
-            cat = f.category.value
+            cat = f.category.value if hasattr(f.category, 'value') else str(f.category)
             if cat not in cat_stats:
                 cat_stats[cat] = {"passes": 0, "severity_counts": {}}
                 
-            if f.status == FindingStatusEnum.pass_:
+            status_val = f.status.value if hasattr(f.status, 'value') else str(f.status)
+            if status_val == "pass":
                 cat_stats[cat]["passes"] += 1
-            elif f.status == FindingStatusEnum.fail and f.severity:
-                sev = f.severity.value
+            elif status_val == "fail" and f.severity:
+                sev = f.severity.value if hasattr(f.severity, 'value') else str(f.severity)
                 cat_stats[cat]["severity_counts"][sev] = cat_stats[cat]["severity_counts"].get(sev, 0) + 1
                 
         category_scores = {}

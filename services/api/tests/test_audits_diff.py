@@ -13,8 +13,10 @@ async def diff_data(db: AsyncSession):
     
     db.add(User(id=user_id, email=f"diff_{user_id.hex}@test.com"))
     db.add(Organization(id=org_id, name="Diff Org"))
+    await db.flush()
     db.add(Membership(user_id=user_id, org_id=org_id, role="owner"))
     db.add(Project(id=proj_id, org_id=org_id, domain="diff.com", name="Diff Proj"))
+    await db.flush()
     
     # Older audit
     old_audit_id = uuid.uuid4()
@@ -77,7 +79,7 @@ async def diff_data(db: AsyncSession):
 async def test_audit_diff_endpoint(client: AsyncClient, diff_data, db):
     # Authenticate
     email = f"diff_{diff_data['user_id'].hex}@test.com"
-    reg_res = await client.post("/v1/auth/register", json={
+    await client.post("/v1/auth/register", json={
         "email": f"new_{email}", # need a new one since diff_data inserts directly without hash
         "password": "strongpassword123"
     })

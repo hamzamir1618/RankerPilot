@@ -1,5 +1,4 @@
-from typing import Dict, List, Optional
-from app.models.models import FindingStatusEnum
+from typing import Dict
 
 def calculate_category_score(passes: int, severity_counts: Dict[str, int]) -> float:
     """
