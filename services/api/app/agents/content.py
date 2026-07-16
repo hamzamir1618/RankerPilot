@@ -1,14 +1,15 @@
 import logging
 from typing import List, Literal
 from pydantic import BaseModel
+from app.utils.clustering import jaccard_similarity
 
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
 from app.integrations.llm import get_client
 
-logger = logging.getLogger(__name__)
+from app.integrations.llm import get_client
 
-from app.utils.clustering import jaccard_similarity
+logger = logging.getLogger(__name__)
 
 class ContentAgent(BaseAgent):
     id = "content"

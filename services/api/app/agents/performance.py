@@ -19,7 +19,7 @@ class PerformanceAgent(BaseAgent):
         
         # 1. Select representative templates
         pages_to_test = []
-        root_url = ctx.audit.root_url
+        root_url = ctx.root_url
         root_page = next((p for p in ctx.pages if p.url == root_url), None)
         if root_page and root_page.status_code == 200:
             pages_to_test.append(root_page)

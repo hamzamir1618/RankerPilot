@@ -6,7 +6,7 @@ async def upload_file_to_s3(file_data: bytes, object_name: str, content_type: st
     Uploads a file to MinIO/S3 and returns a presigned URL valid for 7 days.
     """
     session = aioboto3.Session()
-    async with session.client(
+    async with session.client( # type: ignore
         "s3",
         endpoint_url=settings.S3_ENDPOINT,
         aws_access_key_id=settings.S3_ACCESS_KEY,

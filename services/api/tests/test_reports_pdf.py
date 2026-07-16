@@ -1,4 +1,3 @@
-import pytest
 from app.reports.generator import generate_pdf_report, env
 
 def test_pdf_generation_and_injection():

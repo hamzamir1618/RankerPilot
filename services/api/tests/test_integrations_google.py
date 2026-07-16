@@ -1,8 +1,7 @@
 import pytest
 import respx
-import httpx
-from app.integrations.google_psi import fetch_psi_data, psi_breaker, psi_limiter
-from app.integrations.google_crux import fetch_crux_data, crux_breaker, crux_limiter
+from app.integrations.google_psi import fetch_psi_data, psi_breaker
+from app.integrations.google_crux import fetch_crux_data, crux_breaker
 from app.core.rate_limit import redis_client
 
 @pytest.fixture(autouse=True)
@@ -21,6 +20,7 @@ async def test_psi_cache_hit_miss():
         
         # Miss
         data1 = await fetch_psi_data("https://example.com")
+        assert data1 is not None
         assert route.call_count == 1
         assert data1["lighthouseResult"]["audits"]["render-blocking-resources"]["score"] == 0.5
         

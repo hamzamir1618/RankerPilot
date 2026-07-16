@@ -1,6 +1,6 @@
 import os
 import jinja2
-from weasyprint import HTML, CSS
+from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
 # Jinja2 Environment with explicit autoescaping
@@ -22,4 +22,6 @@ def generate_pdf_report(context: dict) -> bytes:
     
     # Render PDF bytes
     pdf_bytes = html.write_pdf(font_config=font_config)
+    if not pdf_bytes:
+        raise ValueError("Failed to generate PDF")
     return pdf_bytes

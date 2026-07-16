@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from app.core.deps import async_session_factory
 from app.core.events import publish_event_sync
-from app.models.models import Audit, Page, Finding, AuditStatusEnum, FindingStatusEnum, Project
+from app.models.models import Audit, Page, Finding, AuditStatusEnum, Project
 from app.scoring.weights import get_category_weights
 from app.scoring.aggregate import calculate_category_score, calculate_site_score
 from app.scoring.action_plan import compute_internal_pagerank

@@ -25,7 +25,7 @@ class GoogleAPIError(Exception):
     retry=retry_if_exception_type((httpx.RequestError, httpx.HTTPStatusError, GoogleAPIError)),
     reraise=True
 )
-async def fetch_crux_data(url: str = None, origin: str = None, form_factor: str = None) -> dict | None:
+async def fetch_crux_data(url: str | None = None, origin: str | None = None, form_factor: str | None = None) -> dict | None:
     """
     Fetches CrUX data for a given URL or origin.
     Implements Redis caching, rate limiting, retries, and circuit breaking.

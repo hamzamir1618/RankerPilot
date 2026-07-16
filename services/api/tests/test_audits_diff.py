@@ -67,6 +67,7 @@ async def diff_data(db: AsyncSession):
     )
     
     db.add_all([f_resolved_old, f_resolved_new, f_unchanged_old, f_unchanged_new, f_new_new])
+    await db.flush()
     await db.commit()
     
     return {

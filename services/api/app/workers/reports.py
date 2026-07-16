@@ -56,26 +56,26 @@ async def async_generate_report(audit_id_str: str):
         
         findings_by_category = {}
         for f in findings:
-            cat = f.category.value if hasattr(f.category, 'value') else str(f.category)
+            cat = f.category.value if f.category and hasattr(f.category, 'value') else str(f.category)
             if cat not in findings_by_category:
                 findings_by_category[cat] = []
             findings_by_category[cat].append({
                 "title": f.title,
-                "severity": f.severity.value if hasattr(f.severity, 'value') else str(f.severity) if f.severity else "info",
+                "severity": f.severity.value if f.severity and hasattr(f.severity, 'value') else str(f.severity) if f.severity else "info",
                 "evidence": f.evidence,
                 "fix": f.fix
             })
             
         context = {
-            "project_name": project.name,
-            "domain": project.domain,
+            "project_name": project.name if project else "Unknown Project",
+            "domain": project.domain if project else "unknown.com",
             "score": int(audit.score) if audit.score is not None else "N/A",
             "date": datetime.datetime.now().strftime("%Y-%m-%d"),
             "action_plan": [{
                 "title": f.title,
-                "severity": f.severity.value if hasattr(f.severity, 'value') else str(f.severity),
-                "effort": f.effort.value if hasattr(f.effort, 'value') else str(f.effort),
-                "category": f.category.value if hasattr(f.category, 'value') else str(f.category),
+                "severity": f.severity.value if f.severity and hasattr(f.severity, 'value') else str(f.severity) if f.severity else "info",
+                "effort": f.effort.value if f.effort and hasattr(f.effort, 'value') else str(f.effort) if f.effort else "unknown",
+                "category": f.category.value if f.category and hasattr(f.category, 'value') else str(f.category),
                 "fix": f.fix
             } for f in action_plan],
             "findings_by_category": findings_by_category

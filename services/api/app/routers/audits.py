@@ -249,7 +249,7 @@ async def sse_events(audit_id: str, request: Request):
 
 @router.post("/audits/{audit_id}/report", status_code=202)
 async def request_report(audit_id: uuid.UUID, user=Depends(get_current_user)):
-    generate_report_task.delay(str(audit_id))
+    generate_report_task.delay(str(audit_id)) # type: ignore
     return {"status": "accepted"}
 
 @router.get("/reports/{audit_id}")
