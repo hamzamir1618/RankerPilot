@@ -5,6 +5,13 @@ from httpx import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import User, Organization, Project, Membership, OAuthToken, OAuthProviderEnum, RoleEnum
+from app.core.config import settings
+from cryptography.fernet import Fernet
+from pydantic import SecretStr
+
+# Ensure the tests run with a valid 32-byte url-safe base64 key
+settings.TOKEN_ENCRYPTION_KEY = SecretStr(Fernet.generate_key().decode("utf-8"))
+
 from app.integrations.gsc import get_quick_wins, refresh_gsc_token, get_fernet
 
 @pytest.fixture
