@@ -7,8 +7,6 @@ from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
 from app.integrations.llm import get_client
 
-from app.integrations.llm import get_client
-
 logger = logging.getLogger(__name__)
 
 class ContentAgent(BaseAgent):

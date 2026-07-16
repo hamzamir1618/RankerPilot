@@ -33,11 +33,13 @@ async def diff_data(db: AsyncSession):
         page_limit=10, root_url="https://diff.com", created_by=user_id, score=85.5
     )
     db.add(new_audit)
+    await db.flush()
     
     # Pages
     old_page = Page(id=uuid.uuid4(), audit_id=old_audit_id, url="https://diff.com/about", status_code=200, rendered=False)
     new_page = Page(id=uuid.uuid4(), audit_id=new_audit_id, url="https://diff.com/about", status_code=200, rendered=False)
     db.add_all([old_page, new_page])
+    await db.flush()
     
     # Findings
     # 1. Resolved (fail in old, pass in new)
