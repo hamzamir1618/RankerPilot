@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel, constr, Field
+from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
 import datetime
@@ -47,7 +47,7 @@ async def discover_keywords(
     
     # Ideally, if URL is provided, we use a different DFS endpoint, but let's assume we use keyword_ideas with seed
     seed = req.seed or req.url
-    dfs_data = await keyword_ideas([seed], location_code, req.language, meter=meter)
+    dfs_data = await keyword_ideas([str(seed)], location_code, req.language, meter=meter)
     
     if dfs_data and dfs_data.get("error") == "budget_exceeded":
         return {"status": "partial", "message": "keyword data truncated: budget cap reached"}

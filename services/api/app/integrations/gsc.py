@@ -4,6 +4,7 @@ import httpx
 from datetime import datetime, timedelta, timezone
 from cryptography.fernet import Fernet
 from typing import Optional, Dict, Any, List
+import urllib.parse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -102,7 +103,7 @@ async def query_search_analytics(
         "rowLimit": 1000
     }
 
-    url = f"https://searchconsole.googleapis.com/webmasters/v3/sites/{httpx.utils.quote(site_url, safe='')}/searchAnalytics/query"
+    url = f"https://searchconsole.googleapis.com/webmasters/v3/sites/{urllib.parse.quote(site_url, safe='')}/searchAnalytics/query"
     
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:

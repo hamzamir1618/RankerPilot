@@ -2,7 +2,6 @@ import pytest
 import uuid
 import respx
 from httpx import Response
-from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import User, Organization, Project, Membership, OAuthToken, OAuthProviderEnum, RoleEnum
@@ -47,6 +46,8 @@ async def test_gsc_token_refresh_happy(db: AsyncSession, gsc_setup_data):
     
     project = await db.get(Project, gsc_setup_data["project_id"])
     token = await db.get(OAuthToken, gsc_setup_data["token_id"])
+    assert project is not None
+    assert token is not None
     
     access_token = await refresh_gsc_token(db, token, project)
     assert access_token == "new_access_token"
@@ -61,6 +62,8 @@ async def test_gsc_token_refresh_revoked(db: AsyncSession, gsc_setup_data):
     
     project = await db.get(Project, gsc_setup_data["project_id"])
     token = await db.get(OAuthToken, gsc_setup_data["token_id"])
+    assert project is not None
+    assert token is not None
     
     access_token = await refresh_gsc_token(db, token, project)
     
