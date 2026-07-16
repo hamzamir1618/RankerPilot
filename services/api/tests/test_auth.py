@@ -50,7 +50,7 @@ async def test_refresh_token_rotation_and_reuse(client: AsyncClient):
     reg_res = await client.post("/v1/auth/register", json={
         "email": email,
         "password": "strongpassword123"
-    })
+    }, headers={"X-Forwarded-For": "10.0.0.100"})
     assert reg_res.status_code == 200
     refresh_cookie = reg_res.cookies.get("refresh_token")
     if not refresh_cookie:
