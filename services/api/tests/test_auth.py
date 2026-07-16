@@ -51,13 +51,25 @@ async def test_refresh_token_rotation_and_reuse(client: AsyncClient):
         "email": email,
         "password": "strongpassword123"
     })
+    assert reg_res.status_code == 200
     refresh_cookie = reg_res.cookies.get("refresh_token")
+    if not refresh_cookie:
+        # Fallback if httpx stripped the secure cookie
+        for cookie_str in reg_res.headers.get_list("set-cookie"):
+            if cookie_str.startswith("refresh_token="):
+                refresh_cookie = cookie_str.split("=")[1].split(";")[0]
+                break
     assert refresh_cookie is not None
     
     # 1. Refresh successfully
     refresh_res = await client.post("/v1/auth/refresh", headers={"Cookie": f"refresh_token={refresh_cookie}"})
     assert refresh_res.status_code == 200
     new_refresh_cookie = refresh_res.cookies.get("refresh_token")
+    if not new_refresh_cookie:
+        for cookie_str in refresh_res.headers.get_list("set-cookie"):
+            if cookie_str.startswith("refresh_token="):
+                new_refresh_cookie = cookie_str.split("=")[1].split(";")[0]
+                break
     assert new_refresh_cookie != refresh_cookie
     assert new_refresh_cookie is not None
     
