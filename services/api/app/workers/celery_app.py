@@ -5,7 +5,7 @@ celery_app = Celery(
     "rankerpilot",
     broker=str(settings.REDIS_URL),
     backend=str(settings.REDIS_URL),
-    include=["app.workers.pipelines"]
+    include=["app.workers.pipelines", "app.workers.reports"]
 )
 
 celery_app.conf.update(
@@ -17,6 +17,7 @@ celery_app.conf.update(
         "app.workers.pipelines.aggregate_findings": {"queue": "reports"},
         "app.workers.pipelines.compute_score": {"queue": "reports"},
         "app.workers.pipelines.finalize_audit": {"queue": "reports"},
+        "app.workers.reports.generate_report_task": {"queue": "reports"},
     },
     task_acks_late=True,
     task_reject_on_worker_lost=True,

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SEO Audit Report - {{ project_name }}</title>
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --secondary-color: #3b82f6;
+            --text-color: #1f2937;
+            --bg-color: #f8fafc;
+            --font-family: 'Inter', 'Helvetica', sans-serif;
+            --critical-color: #dc2626;
+            --high-color: #ea580c;
+            --medium-color: #eab308;
+            --low-color: #22c55e;
+        }
+        
+        @page {
+            size: A4;
+            margin: 2cm;
+            @bottom-right {
+                content: counter(page);
+                font-family: var(--font-family);
+                font-size: 10pt;
+                color: #64748b;
+            }
+        }
+        
+        body {
+            font-family: var(--font-family);
+            color: var(--text-color);
+            background-color: #ffffff;
+            line-height: 1.5;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+        }
+
+        .cover-page {
+            page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        .cover-title {
+            font-size: 36pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .cover-subtitle {
+            font-size: 20pt;
+            color: #64748b;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48pt;
+            margin: 40px auto;
+        }
+
+        .section {
+            page-break-before: always;
+        }
+
+        .finding {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 15px 0;
+            page-break-inside: avoid;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10pt;
+            font-weight: bold;
+            color: white;
+            text-transform: capitalize;
+        }
+
+        .badge.critical { background-color: var(--critical-color); }
+        .badge.high { background-color: var(--high-color); }
+        .badge.medium { background-color: var(--medium-color); }
+        .badge.low { background-color: var(--low-color); }
+
+        pre {
+            background-color: var(--bg-color);
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-size: 10pt;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cover Page -->
+    <div class="cover-page">
+        <div class="cover-title">SEO Audit Report</div>
+        <div class="cover-subtitle">{{ project_name }} ({{ domain }})</div>
+        <div class="score-circle">
+            {{ score }}
+        </div>
+        <p>Generated on: {{ date }}</p>
+    </div>
+
+    <!-- Top Priorities -->
+    <div class="section">
+        <h2>Top Action Plan Priorities</h2>
+        <p>These are the highest-impact issues identified in the audit based on severity and traffic weight.</p>
+        
+        {% for finding in action_plan %}
+        <div class="finding">
+            <h3>{{ loop.index }}. {{ finding.title }}</h3>
+            <span class="badge {{ finding.severity }}">{{ finding.severity }}</span>
+            <span class="badge" style="background-color: #64748b;">Effort: {{ finding.effort | replace("_", " ") | capitalize }}</span>
+            <p><strong>Category:</strong> {{ finding.category }}</p>
+            {% if finding.fix %}
+            <p><strong>Fix:</strong> {{ finding.fix }}</p>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>No critical issues found! Great job.</p>
+        {% endfor %}
+    </div>
+
+    <!-- Appendix: All Findings -->
+    <div class="section">
+        <h2>All Findings by Category</h2>
+        
+        {% for category, items in findings_by_category.items() %}
+        <h3>{{ category | capitalize }}</h3>
+        {% for finding in items %}
+        <div class="finding">
+            <h4>{{ finding.title }}</h4>
+            <span class="badge {{ finding.severity }}">{{ finding.severity }}</span>
+            {% if finding.evidence %}
+            <pre><code>{{ finding.evidence | tojson(indent=2) }}</code></pre>
+            {% endif %}
+            {% if finding.fix %}
+            <p><strong>Recommendation:</strong> {{ finding.fix }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+</body>
+</html>

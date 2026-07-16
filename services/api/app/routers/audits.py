@@ -13,6 +13,10 @@ from app.crawler.validator import validate_target_url, SSRFViolation
 from app.core.rate_limit import redis_client
 from sqlalchemy import case, desc
 from app.crawler.discovery import normalize_url
+from app.workers.reports import generate_report_task
+import io
+import csv
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/v1", tags=["audits"])
 
@@ -242,3 +246,45 @@ async def sse_events(audit_id: str, request: Request):
             await pubsub.unsubscribe(channel)
             
     return EventSourceResponse(event_generator())
+
+@router.post("/audits/{audit_id}/report", status_code=202)
+async def request_report(audit_id: uuid.UUID, user=Depends(get_current_user)):
+    generate_report_task.delay(str(audit_id))
+    return {"status": "accepted"}
+
+@router.get("/reports/{audit_id}")
+async def get_report(audit_id: uuid.UUID, user=Depends(get_current_user)):
+    # Check if the report is ready in Redis
+    url = await redis_client.get(f"report_url:{str(audit_id)}")
+    if url:
+        return {"status": "ready", "url": url}
+    return {"status": "pending"}
+
+@router.get("/audits/{audit_id}/export.csv")
+async def export_csv(
+    audit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    async def iter_csv():
+        yield "ID,Check,Status,Severity,Category,Title,Page_ID\n"
+        stmt = select(Finding).where(Finding.audit_id == audit_id).order_by(Finding.id)
+        # SQLAlchemy async streaming
+        result = await db.stream(stmt)
+        async for row in result.scalars():
+            out = io.StringIO()
+            writer = csv.writer(out)
+            writer.writerow([
+                str(row.id),
+                row.check_id,
+                row.status.value if hasattr(row.status, 'value') else str(row.status),
+                row.severity.value if row.severity and hasattr(row.severity, 'value') else str(row.severity) if row.severity else "",
+                row.category.value if hasattr(row.category, 'value') else str(row.category),
+                row.title,
+                str(row.page_id) if row.page_id else ""
+            ])
+            yield out.getvalue()
+            
+    return StreamingResponse(iter_csv(), media_type="text/csv", headers={
+        "Content-Disposition": f"attachment; filename=audit_{audit_id}_findings.csv"
+    })
