@@ -51,21 +51,23 @@ async def test_refresh_token_rotation_and_reuse(client: AsyncClient):
         "email": email,
         "password": "strongpassword123"
     })
-    refresh_cookie = reg_res.cookies.get("refresh_token")
+    refresh_cookie = client.cookies.get("refresh_token")
     
     # 1. Refresh successfully
-    refresh_res = await client.post("/v1/auth/refresh", cookies={"refresh_token": refresh_cookie or ""})
+    refresh_res = await client.post("/v1/auth/refresh")
     assert refresh_res.status_code == 200
-    new_refresh_cookie = refresh_res.cookies.get("refresh_token")
+    new_refresh_cookie = client.cookies.get("refresh_token")
     assert new_refresh_cookie != refresh_cookie
     
     # 2. Try reusing old token -> Reuse detection should fire
-    reuse_res = await client.post("/v1/auth/refresh", cookies={"refresh_token": refresh_cookie or ""})
+    client.cookies.set("refresh_token", refresh_cookie)
+    reuse_res = await client.post("/v1/auth/refresh")
     assert reuse_res.status_code == 401
     assert "reuse detected" in reuse_res.json()["detail"].lower()
     
     # 3. Try using the new token after family revoked -> Should fail
-    revoked_res = await client.post("/v1/auth/refresh", cookies={"refresh_token": new_refresh_cookie or ""})
+    client.cookies.set("refresh_token", new_refresh_cookie)
+    revoked_res = await client.post("/v1/auth/refresh")
     assert revoked_res.status_code == 401
     assert "revoked" in revoked_res.json()["detail"].lower()
 
