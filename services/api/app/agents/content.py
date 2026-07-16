@@ -6,6 +6,8 @@ from app.utils.clustering import jaccard_similarity
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
 from app.integrations.llm import get_client
+from app.integrations.dataforseo import serp_advanced, CostMeter
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +55,34 @@ class ContentAgent(BaseAgent):
             improvements: List[str]
         
         for page in top_pages:
+            # 1. Fetch real SERP snapshot for the page's core topic (approximated by title)
+            topic = page.title.split("-")[0].strip() if page.title else "default topic"
+            meter = CostMeter(cap=settings.DFS_AUDIT_BUDGET_USD)
+            serp_data = await serp_advanced(topic, meter=meter)
+            
+            serp_summary = "No SERP data available due to budget or API constraints."
+            if serp_data and serp_data.get("tasks"):
+                items = serp_data["tasks"][0].get("result", [])
+                if items:
+                    results = items[0].get("items", [])[:10]
+                    # Compute average word count if available in DFS results, else fallback
+                    word_counts = [r.get("metrics", {}).get("word_count", 0) for r in results if r.get("metrics", {}).get("word_count")]
+                    avg_word_count = sum(word_counts) // len(word_counts) if word_counts else "Unknown"
+                    
+                    titles = [r.get("title", "") for r in results]
+                    serp_summary = f"Top 10 SERP Titles: {', '.join(titles)}\nAverage SERP Word Count: {avg_word_count}"
+                    
             prompt = f"""
             You are a Google Quality Rater evaluating E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness).
             Analyze the following page content for its E-E-A-T signals and classify its primary search intent.
             Industry context: {ctx.industry}
             
-            Title: {page.title}
+            Real SERP Snapshot for '{topic}':
+            {serp_summary}
+            
+            Compare the page's word count ({page.word_count}) and content intent against the real SERP average.
+            
+            Page Title: {page.title}
             Content (truncated): {(page.content_text or "")[:3000]}
             """
             

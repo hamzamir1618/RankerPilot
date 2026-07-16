@@ -58,7 +58,8 @@ def compute_internal_pagerank(site_graph: Dict[str, List[str]], iterations: int 
 def get_action_plan_sort_key(
     severity: str | None, 
     effort: str | None, 
-    page_rank: float | None
+    page_rank: float | None,
+    gsc_traffic: float | None = None
 ) -> Tuple[int, float, int]:
     """
     Returns a sort key tuple: (severity_rank, traffic_weight (desc), effort_rank).
@@ -66,8 +67,11 @@ def get_action_plan_sort_key(
     """
     s_rank = SEVERITY_RANK.get(severity, 4) if severity else 4
     e_rank = EFFORT_RANK.get(effort, 4) if effort else 4
-    
-    # traffic_weight is desc, so negate it.
-    t_weight = -(page_rank or 0.0)
+    # If GSC is connected, heavily weight real traffic (e.g. clicks or impressions)
+    if gsc_traffic is not None:
+        t_weight = -float(gsc_traffic)
+    else:
+        # Fallback to internal pagerank
+        t_weight = -(page_rank or 0.0)
     
     return (s_rank, t_weight, e_rank)

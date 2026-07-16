@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, projects, audits
+from app.routers import auth, projects, audits, keywords
 
 app = FastAPI(title="Rankerpilot API")
 
@@ -19,3 +19,4 @@ async def health_check():
 app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(audits.router)
+app.include_router(keywords.router)
