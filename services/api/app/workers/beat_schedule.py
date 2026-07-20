@@ -88,7 +88,7 @@ async def async_dispatch_rank_tracking():
             if is_due:
                 # Dispatch the rank tracking workflow for this project
                 # (to be implemented in rank_tracking.py)
-                run_rank_tracking_for_project.delay(str(sched.project_id))
+                run_rank_tracking_for_project.delay(str(sched.project_id))  # type: ignore
 
 @shared_task(bind=True, name="app.workers.beat_schedule.dispatch_rank_tracking")
 def dispatch_rank_tracking(self):
