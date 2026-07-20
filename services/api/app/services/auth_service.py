@@ -219,7 +219,12 @@ async def google_oauth_login(db: AsyncSession, code: str, code_verifier: str, re
             
         # 2. Decode id_token (skipping signature verification for speed since we just got it via TLS directly from Google)
         # In a real production scenario with arbitrary JWTs, verify it. Here we got it directly.
-        decoded = jwt.decode(id_token_str, options={"verify_signature": False})
+        decoded = jwt.decode(
+            id_token_str, 
+            options={"verify_signature": False},
+            audience=settings.GOOGLE_OAUTH_CLIENT_ID,
+            issuer=["https://accounts.google.com", "accounts.google.com"]
+        )
         
         email = decoded.get("email")
         google_sub = decoded.get("sub")

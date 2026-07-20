@@ -34,8 +34,12 @@ jobs:
         run: cd services/api && uv sync --all-extras
       - name: Run Ruff (Lint)
         run: cd services/api && uv run ruff check .
+      - name: Run pip-audit
+        run: cd services/api && uv run pip-audit || echo "pip-audit failed"
       - name: Run ESLint
         run: pnpm run lint
+      - name: Run npm audit
+        run: pnpm audit || echo "npm audit failed"
 
   type-check:
     runs-on: ubuntu-latest

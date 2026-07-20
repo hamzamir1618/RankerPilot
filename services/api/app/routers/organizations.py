@@ -5,13 +5,23 @@ from pydantic import BaseModel
 
 from app.core.deps import get_db, get_current_org
 from app.models.models import Organization
+from app.core.rate_limit import limit_org
 
-router = APIRouter(prefix="/v1/organizations", tags=["Organizations"])
+router = APIRouter(prefix="/v1/organizations", tags=["Organizations"], dependencies=[Depends(limit_org)])
+
+import re
+from pydantic import BaseModel, field_validator
 
 class ThemeUpdateRequest(BaseModel):
     theme_primary_color: str | None = None
     theme_accent_color: str | None = None
     theme_agency_name: str | None = None
+
+    @field_validator('theme_primary_color', 'theme_accent_color')
+    def validate_hex_color(cls, v):
+        if v is not None and not re.match(r'^#(?:[0-9a-fA-F]{3}){1,2}$', v):
+            raise ValueError('Must be a valid hex color code (e.g., #FFFFFF)')
+        return v
 
 class ThemeResponse(BaseModel):
     theme_logo_url: str | None

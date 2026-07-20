@@ -124,6 +124,18 @@ cd services/api
 uv run pytest tests/ -v
 ```
 
+### 6.1 Load Testing (k6)
+A load test script `tests/load_test.js` is provided to simulate 50 concurrent authenticated users queuing an audit simultaneously. This asserts queue draining times and SSE connection resilience.
+To run the load test against your local docker-compose environment:
+1. Ensure the API, Celery Worker, PostgreSQL, and Redis containers/services are running.
+2. Ensure you have `k6` installed (`choco install k6` on Windows, or `brew install k6` on Mac).
+3. Run the load test:
+```bash
+cd services/api
+k6 run tests/load_test.js
+```
+*(Ensure you modify the `AUTH_TOKEN` and `PROJECT_ID` variables within `load_test.js` or provide them via `k6 run -e AUTH_TOKEN=... -e PROJECT_ID=... tests/load_test.js` before executing.)*
+
 ## 7. Deployment (Railway)
 
 A `Dockerfile` is provided in `services/api/` specifically optimized for deployment on Railway (or similar PaaS providers).

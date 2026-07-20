@@ -18,25 +18,7 @@ from app.models.models import Webhook, WebhookDelivery
 
 logger = logging.getLogger(__name__)
 
-class SSRFError(Exception):
-    pass
-
-def _resolve_ip(hostname: str) -> str:
-    try:
-        return socket.gethostbyname(hostname)
-    except socket.gaierror:
-        raise SSRFError(f"Could not resolve hostname: {hostname}")
-
-def check_ssrf(url: str):
-    parsed = urlparse(url)
-    if not parsed.hostname:
-        raise SSRFError("No hostname in URL")
-        
-    ip = _resolve_ip(parsed.hostname)
-    ip_obj = ipaddress.ip_address(ip)
-    
-    if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
-        raise SSRFError(f"URL resolves to a restricted IP: {ip}")
+from app.crawler.validator import validate_target_url, SSRFViolation
 
 @retry(
     stop=stop_after_attempt(3),
@@ -44,7 +26,7 @@ def check_ssrf(url: str):
     retry=retry_if_exception_type((httpx.RequestError, httpx.HTTPStatusError))
 )
 async def dispatch_webhook_http(url: str, payload: Dict[str, Any], secret: str):
-    check_ssrf(url)
+    await validate_target_url(url)
     
     payload_bytes = json.dumps(payload).encode("utf-8")
     signature = hmac.new(secret.encode("utf-8"), payload_bytes, hashlib.sha256).hexdigest()

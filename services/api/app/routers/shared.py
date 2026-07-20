@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 
-from app.core.deps import get_db, get_current_user
+from app.core.deps import get_db, get_current_org
 from app.models.models import User, Audit, SharedReportToken, Page, Finding, Project, Organization
 
 router = APIRouter(prefix="/v1", tags=["shared"])
@@ -18,7 +18,7 @@ async def generate_share_token(
     audit_id: uuid.UUID,
     req: ShareRequest,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    org: Organization = Depends(get_current_org)
 ):
     audit = await db.get(Audit, audit_id)
     if not audit:
@@ -44,7 +44,7 @@ async def revoke_share_token(
     audit_id: uuid.UUID,
     token_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_user)
+    org: Organization = Depends(get_current_org)
 ):
     token = await db.scalar(select(SharedReportToken).where(SharedReportToken.token == token_id, SharedReportToken.audit_id == audit_id))
     if not token:

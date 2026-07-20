@@ -1,7 +1,7 @@
 import logging
 import json
 import httpx
-from cryptography.fernet import Fernet
+
 from typing import Optional, Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -14,9 +14,7 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL = 12 * 60 * 60
 
-def get_fernet() -> Fernet:
-    key = settings.TOKEN_ENCRYPTION_KEY.get_secret_value()
-    return Fernet(key.encode())
+from app.core.crypto import decrypt_token
 
 async def get_ga4_token(db: AsyncSession, project_id: str) -> Optional[OAuthToken]:
     query = (
@@ -34,9 +32,8 @@ async def get_ga4_token(db: AsyncSession, project_id: str) -> Optional[OAuthToke
     return res.scalar_one_or_none()
 
 async def refresh_ga4_token(db: AsyncSession, token: OAuthToken) -> Optional[str]:
-    fernet = get_fernet()
     try:
-        refresh_token = fernet.decrypt(token.encrypted_refresh_token).decode("utf-8")
+        refresh_token = decrypt_token(token.encrypted_refresh_token)
     except Exception as e:
         logger.error(f"Failed to decrypt refresh token: {e}")
         return None

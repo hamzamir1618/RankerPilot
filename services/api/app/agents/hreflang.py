@@ -7,6 +7,8 @@ class HreflangAgent(BaseAgent):
         findings = []
         
         try:
+            from app.crawler.validator import validate_target_url
+            await validate_target_url(ctx.root_url)
             async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.get(ctx.root_url)
                 html = res.text

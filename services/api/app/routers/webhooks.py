@@ -8,8 +8,9 @@ from pydantic import BaseModel, HttpUrl
 
 from app.core.deps import get_db, get_current_org
 from app.models.models import Organization, Webhook
+from app.core.rate_limit import limit_org
 
-router = APIRouter(prefix="/v1/organizations", tags=["Webhooks"])
+router = APIRouter(prefix="/v1/organizations", tags=["Webhooks"], dependencies=[Depends(limit_org)])
 
 class WebhookCreate(BaseModel):
     url: HttpUrl
@@ -33,8 +34,11 @@ async def create_webhook(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     url_str = str(data.url)
-    if "localhost" in url_str or "127.0.0.1" in url_str or "169.254" in url_str:
-        raise HTTPException(status_code=400, detail="Invalid webhook URL")
+    from app.crawler.validator import validate_target_url, SSRFViolation
+    try:
+        await validate_target_url(url_str)
+    except SSRFViolation as e:
+        raise HTTPException(status_code=400, detail=f"Invalid webhook URL: {str(e)}")
 
     secret = secrets.token_hex(32)
 

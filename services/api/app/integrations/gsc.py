@@ -2,7 +2,7 @@ import logging
 import json
 import httpx
 from datetime import datetime, timedelta, timezone
-from cryptography.fernet import Fernet
+
 from typing import Optional, Dict, Any, List
 import urllib.parse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL = 12 * 60 * 60  # 12 hours
 
-def get_fernet() -> Fernet:
-    key = settings.TOKEN_ENCRYPTION_KEY.get_secret_value()
-    return Fernet(key.encode())
+from app.core.crypto import decrypt_token
 
 async def get_gsc_token(db: AsyncSession, project_id: str) -> Optional[OAuthToken]:
     """Finds a valid GSC OAuthToken for a user in the project's org."""
@@ -38,9 +36,8 @@ async def get_gsc_token(db: AsyncSession, project_id: str) -> Optional[OAuthToke
 
 async def refresh_gsc_token(db: AsyncSession, token: OAuthToken, project: Project) -> Optional[str]:
     """Refreshes the OAuth token using the encrypted refresh token."""
-    fernet = get_fernet()
     try:
-        refresh_token = fernet.decrypt(token.encrypted_refresh_token).decode("utf-8")
+        refresh_token = decrypt_token(token.encrypted_refresh_token)
     except Exception as e:
         logger.error(f"Failed to decrypt refresh token: {e}")
         return None

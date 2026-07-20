@@ -12,8 +12,9 @@ from app.schemas.schemas import ProjectCreate, ProjectResponse
 from app.models.models import Organization, OAuthToken, OAuthProviderEnum
 from app.core.crypto import encrypt_token
 from app.core.config import settings
+from app.core.rate_limit import limit_project
 
-router = APIRouter(prefix="/v1/projects", tags=["Projects"])
+router = APIRouter(prefix="/v1/projects", tags=["Projects"], dependencies=[Depends(limit_project)])
 
 @router.get("/", response_model=List[ProjectResponse])
 async def list_projects(

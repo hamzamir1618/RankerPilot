@@ -6,6 +6,7 @@ from app.utils.clustering import jaccard_similarity
 from app.agents.base import BaseAgent, AuditContext
 from app.models.models import FindingCategoryEnum
 from app.integrations.llm import get_client
+from app.agents.prompt_loader import load_prompt
 from app.integrations.dataforseo import serp_advanced, CostMeter
 from app.core.config import settings
 
@@ -72,24 +73,21 @@ class ContentAgent(BaseAgent):
                     titles = [r.get("title", "") for r in results]
                     serp_summary = f"Top 10 SERP Titles: {', '.join(titles)}\nAverage SERP Word Count: {avg_word_count}"
                     
-            prompt = f"""
-            You are a Google Quality Rater evaluating E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness).
-            Analyze the following page content for its E-E-A-T signals and classify its primary search intent.
-            Industry context: {ctx.industry}
-            
-            Real SERP Snapshot for '{topic}':
-            {serp_summary}
-            
-            Compare the page's word count ({page.word_count}) and content intent against the real SERP average.
-            
-            Page Title: {page.title}
-            Content (truncated): {(page.content_text or "")[:3000]}
-            """
+            prompt_pack = load_prompt("content")
+            system_prompt = prompt_pack["system"]
+            user_prompt = prompt_pack["user"].format(
+                industry=ctx.industry,
+                topic=topic,
+                serp_summary=serp_summary,
+                word_count=page.word_count,
+                title=page.title,
+                content=(page.content_text or "")[:3000]
+            )
             
             try:
                 response = await llm.analyze(
-                    system="You are a Google Quality Rater evaluating E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness).",
-                    prompt=prompt,
+                    system=system_prompt,
+                    prompt=user_prompt,
                     pages_data=[],
                     budget=ctx.token_budget,
                     schema_model=EEATResult

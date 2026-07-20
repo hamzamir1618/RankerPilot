@@ -24,8 +24,12 @@ class RateLimiter:
         if forwarded:
             ip = forwarded.split(",")[0].strip()
 
-        # unique key per route and IP
-        key = f"rate_limit:{request.url.path}:{ip}"
+        # If it's an org-level limiter, we can key off X-Org-Id if present
+        org_id = request.headers.get("X-Org-Id")
+        identifier = org_id if org_id else ip
+
+        # unique key per route and identifier
+        key = f"rate_limit:{request.url.path}:{identifier}"
         
         now = time.time()
         window_start = now - self.window
@@ -51,6 +55,8 @@ class RateLimiter:
 # Commonly used rate limiters
 limit_login = RateLimiter(requests=10, window=60)
 limit_register = RateLimiter(requests=5, window=60)
+limit_org = RateLimiter(requests=100, window=60)
+limit_project = RateLimiter(requests=100, window=60)
 
 class TokenBucketRateLimiter:
     """

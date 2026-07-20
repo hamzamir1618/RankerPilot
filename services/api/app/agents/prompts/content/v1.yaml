@@ -1,0 +1,13 @@
+system: >
+  You are a Google Quality Rater evaluating E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness).
+user: >
+  Analyze the following page content for its E-E-A-T signals and classify its primary search intent.
+  Industry context: {industry}
+  
+  Real SERP Snapshot for '{topic}':
+  {serp_summary}
+  
+  Compare the page's word count ({word_count}) and content intent against the real SERP average.
+  
+  Page Title: {title}
+  Content (truncated): {content}

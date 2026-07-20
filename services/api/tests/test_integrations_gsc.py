@@ -5,14 +5,14 @@ from httpx import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.models import User, Organization, Project, Membership, OAuthToken, OAuthProviderEnum, RoleEnum
-from app.integrations.gsc import get_quick_wins, refresh_gsc_token, get_fernet
+from app.integrations.gsc import get_quick_wins, refresh_gsc_token
+from app.core.crypto import encrypt_token
 from app.core.config import settings
-from cryptography.fernet import Fernet
 from pydantic import SecretStr
 
 @pytest.fixture
 async def gsc_setup_data(db: AsyncSession):
-    settings.TOKEN_ENCRYPTION_KEY = SecretStr(Fernet.generate_key().decode("utf-8"))
+    settings.TOKEN_ENCRYPTION_KEY = SecretStr("0123456789abcdef0123456789abcdef")
     
     user_id = uuid.uuid4()
     org_id = uuid.uuid4()
@@ -26,8 +26,7 @@ async def gsc_setup_data(db: AsyncSession):
     project = Project(id=proj_id, org_id=org_id, domain="gsc.com", name="GSC Proj", gsc_connected=True)
     db.add(project)
     
-    fernet = get_fernet()
-    enc_refresh = fernet.encrypt(b"valid_refresh_token")
+    enc_refresh = encrypt_token("valid_refresh_token")
     
     token = OAuthToken(
         id=uuid.uuid4(),
