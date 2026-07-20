@@ -40,7 +40,7 @@ async def credits_setup_data(db: AsyncSession):
     }
 
 @pytest.mark.asyncio
-async def test_credit_concurrency_locking(client: AsyncClient, db: AsyncSession, credits_setup_data):
+async def test_credit_concurrency_locking(client: AsyncClient, db: AsyncSession, credits_setup_data, monkeypatch):
     """
     Test that concurrent requests to create an audit are serialized and only one succeeds
     when the balance is exactly enough for one.
@@ -67,6 +67,9 @@ async def test_credit_concurrency_locking(client: AsyncClient, db: AsyncSession,
             yield session
             
     app.dependency_overrides[get_db] = get_test_db
+    
+    # Mock celery task dispatch to prevent AMQP connection errors
+    monkeypatch.setattr("app.routers.audits.start_audit_pipeline", lambda *args, **kwargs: None)
     
     # Send 3 concurrent requests
     async def create_audit_req():
@@ -128,6 +131,9 @@ async def test_refund_path(client: AsyncClient, db: AsyncSession, credits_setup_
     
     token = create_access_token(owner_id)
     client.headers = {"Authorization": f"Bearer {token}"}
+    
+    # Mock celery task dispatch to prevent AMQP connection errors
+    monkeypatch.setattr("app.routers.audits.start_audit_pipeline", lambda *args, **kwargs: None)
     
     # Create audit (debits 50)
     res = await client.post(f"/v1/projects/{proj_id}/audits", json={
