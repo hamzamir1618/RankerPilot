@@ -6,7 +6,7 @@ from sqlalchemy import select
 from pydantic import BaseModel
 
 from app.core.deps import get_db, get_current_org
-from app.models.models import User, Audit, SharedReportToken, Page, Finding, Project, Organization
+from app.models.models import Audit, SharedReportToken, Page, Finding, Project, Organization
 
 router = APIRouter(prefix="/v1", tags=["shared"])
 

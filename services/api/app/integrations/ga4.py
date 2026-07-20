@@ -9,13 +9,11 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.rate_limit import redis_client
 from app.models.models import OAuthToken, OAuthProviderEnum, Project, Membership, RoleEnum
+from app.core.crypto import decrypt_token
 
 logger = logging.getLogger(__name__)
 
 CACHE_TTL = 12 * 60 * 60
-
-from app.core.crypto import decrypt_token
-
 async def get_ga4_token(db: AsyncSession, project_id: str) -> Optional[OAuthToken]:
     query = (
         select(OAuthToken)

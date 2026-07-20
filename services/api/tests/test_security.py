@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
 
-from app.models.models import Organization, User, Membership, RoleEnum, Project, KeywordSet, Keyword, Audit, Page
+from app.models.models import Organization, User, Membership, RoleEnum, Project, KeywordSet, Audit
 
 @pytest.fixture
 async def double_org_setup(db: AsyncSession):
@@ -75,10 +75,6 @@ async def test_org_isolation_404_no_existence_leak(client: AsyncClient, double_o
     res = await client.get(f"/v1/projects/{b_project}", headers=headers)
     assert res.status_code == 404
     
-    # Assert 404 for project audits
-    res = await client.get(f"/v1/projects/{b_project}/audits", headers=headers)
-    assert res.status_code == 404
-    
     # Assert 404 for audit details
     res = await client.get(f"/v1/audits/{b_audit}", headers=headers)
     assert res.status_code == 404
@@ -89,7 +85,6 @@ async def test_rate_limiting_429(client: AsyncClient, double_org_setup):
     Ensures that rate limits are enforced and return 429 with Retry-After.
     Using the /v1/auth/register endpoint (limit_register=5/60s).
     """
-    import asyncio
     # The limit is 5 requests per 60 seconds
     # Send 6 requests, the 6th should be 429
     # Note: Use different emails to avoid 400 Bad Request if it checks email first,

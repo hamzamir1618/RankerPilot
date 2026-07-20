@@ -9,16 +9,12 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from sqlalchemy import select
 import asyncio
 import logging
-from urllib.parse import urlparse
-import ipaddress
-import socket
 
 from app.core.deps import async_session_factory
 from app.models.models import Webhook, WebhookDelivery
+from app.crawler.validator import validate_target_url
 
 logger = logging.getLogger(__name__)
-
-from app.crawler.validator import validate_target_url, SSRFViolation
 
 @retry(
     stop=stop_after_attempt(3),

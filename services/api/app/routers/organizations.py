@@ -1,16 +1,14 @@
+import re
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from app.core.deps import get_db, get_current_org
 from app.models.models import Organization
 from app.core.rate_limit import limit_org
 
 router = APIRouter(prefix="/v1/organizations", tags=["Organizations"], dependencies=[Depends(limit_org)])
-
-import re
-from pydantic import BaseModel, field_validator
 
 class ThemeUpdateRequest(BaseModel):
     theme_primary_color: str | None = None
