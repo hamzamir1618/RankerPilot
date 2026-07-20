@@ -57,6 +57,17 @@ async def test_credit_concurrency_locking(client: AsyncClient, db: AsyncSession,
     token = create_access_token(owner_id)
     client.headers = {"Authorization": f"Bearer {token}"}
     
+    # Give each request its own DB session so they can run concurrently without IllegalStateChangeError
+    from app.main import app
+    from app.core.deps import get_db
+    from tests.conftest import TestingSessionLocal
+    
+    async def get_test_db():
+        async with TestingSessionLocal() as session:
+            yield session
+            
+    app.dependency_overrides[get_db] = get_test_db
+    
     # Send 3 concurrent requests
     async def create_audit_req():
         return await client.post(f"/v1/projects/{proj_id}/audits", json={
@@ -121,7 +132,7 @@ async def test_refund_path(client: AsyncClient, db: AsyncSession, credits_setup_
     # Create audit (debits 50)
     res = await client.post(f"/v1/projects/{proj_id}/audits", json={
         "mode": "full",
-        "url": "https://invalid-domain-that-will-fail-dns.local",
+        "url": "https://credits.com",
         "page_limit": 1
     })
     assert res.status_code == 202
@@ -138,7 +149,7 @@ async def test_refund_path(client: AsyncClient, db: AsyncSession, credits_setup_
     
     # Run the worker synchronously
     try:
-        await async_crawl_site(audit_id_str, "https://invalid-domain-that-will-fail-dns.local")
+        await async_crawl_site(audit_id_str, "https://credits.com")
     except RuntimeError:
         pass # Expected since 0 pages crawled
         

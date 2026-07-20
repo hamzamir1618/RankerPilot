@@ -83,7 +83,7 @@ async def test_shared_token(client: AsyncClient, db: AsyncSession):
     token = SharedReportToken(
         token=uuid.uuid4(),
         audit_id=audit_id,
-        expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1),
+        expires_at=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) + datetime.timedelta(days=1),
         revoked=False
     )
     db.add(token)
