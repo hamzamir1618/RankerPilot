@@ -28,6 +28,8 @@ from app.agents.schema_agent import SchemaAgent
 from app.agents.content import ContentAgent
 from app.agents.geo import GeoAgent
 from app.agents.local import LocalAgent
+from app.agents.backlinks import BacklinksAgent
+from app.agents.hreflang import HreflangAgent
 
 from app.crawler.discovery import extract_sitemap_urls, normalize_url, is_internal, get_registrable_domain
 from app.services.industry_detection import detect_industry as detect_industry_service
@@ -44,7 +46,9 @@ AGENTS = {
     "schema_agent": SchemaAgent(),
     "content": ContentAgent(),
     "geo": GeoAgent(),
-    "local": LocalAgent()
+    "local": LocalAgent(),
+    "backlinks": BacklinksAgent(),
+    "hreflang": HreflangAgent()
 }
 
 def get_db_session() -> AsyncSession:
@@ -230,7 +234,7 @@ def run_agents_chord(self, result: dict):
     industry = result["industry"]
     
     # Map industry to roster
-    base_roster = ["technical", "sitemap_robots", "security_headers", "onpage", "performance", "images", "schema_agent", "content", "geo"]
+    base_roster = ["technical", "sitemap_robots", "security_headers", "onpage", "performance", "images", "schema_agent", "content", "geo", "backlinks", "hreflang"]
     roster_map = {
         "saas": base_roster,
         "ecommerce": base_roster,

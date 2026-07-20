@@ -6,7 +6,7 @@ from sqlalchemy import select
 from pydantic import BaseModel
 
 from app.core.deps import get_db, get_current_user
-from app.models.models import User, Audit, SharedReportToken, Page, Finding, Project
+from app.models.models import User, Audit, SharedReportToken, Page, Finding, Project, Organization
 
 router = APIRouter(prefix="/v1", tags=["shared"])
 
@@ -77,6 +77,7 @@ async def get_shared_report(
         raise HTTPException(404, "Audit not found")
         
     project = await db.get(Project, audit.project_id)
+    org = await db.get(Organization, project.org_id) if project else None
         
     # Fetch Pages (stripped)
     pages_res = await db.execute(select(Page).where(Page.audit_id == audit.id))
@@ -94,6 +95,12 @@ async def get_shared_report(
         "category_scores": audit.category_scores,
         "target_url": audit.root_url,
         "domain": project.domain if project else None,
+        "theme": {
+            "logo_url": org.theme_logo_url if org else None,
+            "primary_color": org.theme_primary_color if org else None,
+            "accent_color": org.theme_accent_color if org else None,
+            "agency_name": org.theme_agency_name if org else None
+        },
         "pages": [
             {
                 "id": str(p.id),

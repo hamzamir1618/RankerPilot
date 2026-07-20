@@ -59,16 +59,20 @@ def get_action_plan_sort_key(
     severity: str | None, 
     effort: str | None, 
     page_rank: float | None,
-    gsc_traffic: float | None = None
+    gsc_traffic: float | None = None,
+    ga4_conversions: float | None = None
 ) -> Tuple[int, float, int]:
     """
     Returns a sort key tuple: (severity_rank, traffic_weight (desc), effort_rank).
     Python sorts tuples lexicographically, so we negate traffic_weight for desc sorting.
+    If both GA4 and GSC are connected: prefers GA4 conversions, falls back to GSC traffic, then PageRank.
     """
     s_rank = SEVERITY_RANK.get(severity, 4) if severity else 4
     e_rank = EFFORT_RANK.get(effort, 4) if effort else 4
-    # If GSC is connected, heavily weight real traffic (e.g. clicks or impressions)
-    if gsc_traffic is not None:
+    
+    if ga4_conversions is not None and ga4_conversions > 0:
+        t_weight = -(ga4_conversions * 1000) # Weight conversions heavily
+    elif gsc_traffic is not None:
         t_weight = -float(gsc_traffic)
     else:
         # Fallback to internal pagerank

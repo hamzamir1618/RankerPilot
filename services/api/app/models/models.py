@@ -79,6 +79,10 @@ class Organization(Base):
     __tablename__ = "organizations"
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     name: Mapped[str] = mapped_column(String, nullable=False)
+    theme_logo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    theme_primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    theme_accent_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    theme_agency_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 
 class User(Base):
@@ -277,5 +281,22 @@ class SharedReportToken(Base):
     audit_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("audits.id"), nullable=False)
     expires_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
     revoked: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+
+class Webhook(Base):
+    __tablename__ = "webhooks"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("organizations.id"), nullable=False)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    secret: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+
+class WebhookDelivery(Base):
+    __tablename__ = "webhook_deliveries"
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    webhook_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("webhooks.id"), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
 

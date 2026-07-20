@@ -21,6 +21,36 @@ class LocalAgent(BaseAgent):
             logger.info(f"Skipping LocalAgent for industry: {ctx.industry}")
             return findings
 
+        # Check GBP
+        try:
+            from app.integrations.gbp import fetch_gbp_locations
+            from app.core.deps import async_session_factory
+            
+            async with async_session_factory() as session:
+                gbp_locations = await fetch_gbp_locations(session, str(ctx.project_id))
+                
+            if gbp_locations:
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="gbp_connected_locations",
+                    status="pass",
+                    category="local",
+                    title="Google Business Profile Connected",
+                    evidence={"locations_count": len(gbp_locations), "names": [loc.get("title") for loc in gbp_locations[:3]]}
+                ))
+            else:
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="gbp_not_connected",
+                    status="warn",
+                    severity="low",
+                    category="local",
+                    title="Google Business Profile Not Connected",
+                    fix="Connect your Google Business Profile to pull local listing data directly into Rankerpilot."
+                ))
+        except Exception as e:
+            logger.warning(f"Failed to fetch GBP locations in LocalAgent: {e}")
+
         target_pages = []
         for p in ctx.pages:
             if p.status_code != 200:
@@ -66,68 +96,78 @@ class LocalAgent(BaseAgent):
                 raise ValueError("LLM returned None")
                 
             if response.nap_found:
-                findings.append({
-                    "check_id": "local_nap_present",
-                    "status": "pass",
-                    "category": self.category.value,
-                    "title": "NAP (Name, Address, Phone) Found",
-                    "evidence": {"details": response.nap_details or ""}
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="local_nap_present",
+                    status="pass",
+                    category="local",
+                    title="NAP (Name, Address, Phone) Found",
+                    evidence={"details": response.nap_details or ""}
+                ))
             else:
-                findings.append({
-                    "check_id": "local_nap_missing",
-                    "status": "fail",
-                    "severity": "high",
-                    "category": self.category.value,
-                    "title": "Missing NAP (Name, Address, Phone)",
-                    "fix": "Ensure business Name, Address, and Phone number are clearly visible on the site."
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="local_nap_missing",
+                    status="fail",
+                    severity="high",
+                    category="local",
+                    title="Missing NAP (Name, Address, Phone)",
+                    effort="one_week",
+                    fix="Ensure business Name, Address, and Phone number are clearly visible on the site."
+                ))
                 
             if response.gbp_link_found:
-                findings.append({
-                    "check_id": "gbp_link_present",
-                    "status": "pass",
-                    "category": self.category.value,
-                    "title": "Google Business Profile link found"
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="gbp_link_present",
+                    status="pass",
+                    category="local",
+                    title="Google Business Profile link found"
+                ))
             else:
-                findings.append({
-                    "check_id": "gbp_link_missing",
-                    "status": "warn",
-                    "severity": "medium",
-                    "category": self.category.value,
-                    "title": "No Google Business Profile link found",
-                    "fix": "Link to your Google Business Profile / Google Maps listing to improve Local SEO."
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="gbp_link_missing",
+                    status="warn",
+                    severity="medium",
+                    category="local",
+                    title="No Google Business Profile link found",
+                    effort="immediate",
+                    fix="Link to your Google Business Profile / Google Maps listing to improve Local SEO."
+                ))
                 
             areas = response.service_areas
             if areas:
-                findings.append({
-                    "check_id": "service_areas_found",
-                    "status": "pass",
-                    "category": self.category.value,
-                    "title": f"Service Areas Identified: {len(areas)}",
-                    "evidence": {"areas": areas[:5]}
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="service_areas_found",
+                    status="pass",
+                    category="local",
+                    title=f"Service Areas Identified: {len(areas)}",
+                    evidence={"areas": areas[:5]}
+                ))
             else:
-                findings.append({
-                    "check_id": "service_areas_missing",
-                    "status": "info",
-                    "category": self.category.value,
-                    "title": "No explicit service areas mentioned",
-                    "fix": "Consider adding a dedicated Service Areas page or section."
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="service_areas_missing",
+                    status="info",
+                    category="local",
+                    title="No explicit service areas mentioned",
+                    fix="Consider adding a dedicated Service Areas page or section."
+                ))
                 
             issues = response.issues
             if issues:
-                findings.append({
-                    "check_id": "local_seo_issues",
-                    "status": "fail",
-                    "severity": "medium",
-                    "category": self.category.value,
-                    "title": "Local SEO Consistency Issues Detected",
-                    "evidence": {"issues": issues}
-                })
+                findings.append(self.create_finding(
+                    ctx,
+                    check_id="local_seo_issues",
+                    status="fail",
+                    severity="medium",
+                    category="local",
+                    title="Local SEO Consistency Issues Detected",
+                    effort="one_month",
+                    evidence={"issues": issues}
+                ))
                 
         except Exception as e:
             logger.error(f"Local SEO analysis failed: {e}")

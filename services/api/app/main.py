@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, projects, audits, keywords, admin, drift, shared
+from app.routers import auth, projects, audits, keywords, admin, drift, shared, organizations, api_keys, webhooks
 
 app = FastAPI(title="Rankerpilot API")
 
@@ -23,3 +23,6 @@ app.include_router(keywords.router)
 app.include_router(admin.router)
 app.include_router(drift.router)
 app.include_router(shared.router)
+app.include_router(organizations.router)
+app.include_router(api_keys.router)
+app.include_router(webhooks.router)

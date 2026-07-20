@@ -5,7 +5,7 @@ from celery import shared_task
 import asyncio
 
 from app.core.deps import async_session_factory
-from app.models.models import Audit, Finding, Project, Page
+from app.models.models import Audit, Finding, Project, Page, Organization
 from app.reports.generator import generate_pdf_report
 from app.integrations.s3 import upload_file_to_s3
 from app.core.events import publish_event_sync
@@ -20,6 +20,7 @@ async def async_generate_report(audit_id_str: str):
             return
             
         project = await db.scalar(select(Project).where(Project.id == audit.project_id))
+        org = await db.scalar(select(Organization).where(Organization.id == project.org_id)) if project else None
         
         # Fetch all findings
         stmt = select(Finding).where(Finding.audit_id == audit_id)
@@ -78,7 +79,11 @@ async def async_generate_report(audit_id_str: str):
                 "category": f.category.value if f.category and hasattr(f.category, 'value') else str(f.category),
                 "fix": f.fix
             } for f in action_plan],
-            "findings_by_category": findings_by_category
+            "findings_by_category": findings_by_category,
+            "theme_primary_color": org.theme_primary_color if org else None,
+            "theme_accent_color": org.theme_accent_color if org else None,
+            "theme_agency_name": org.theme_agency_name if org else None,
+            "theme_logo_url": org.theme_logo_url if org else None
         }
 
     # Generate PDF

@@ -5,6 +5,9 @@ import datetime
 from pydantic import BaseModel, Field
 from typing import List, Optional
 import uuid
+import io
+import csv
+from fastapi.responses import StreamingResponse
 
 from app.core.deps import get_db, get_current_user
 from app.models.models import Project, KeywordSet, Keyword, KeywordIntentEnum, User, RankSnapshot, ProjectSchedule, Organization
@@ -370,3 +373,45 @@ async def get_tracking_trends(
             "captured_at": snapshot.captured_at
         })
     return response
+
+@router.get("/projects/{project_id}/keywords/export.csv")
+async def export_keywords_csv(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    async def iter_csv():
+        yield "ID,Set_Name,Term,Country,Language,Volume,Difficulty,CPC,Intent,Tracked\n"
+        
+        stmt = select(Keyword, KeywordSet).join(
+            KeywordSet, Keyword.set_id == KeywordSet.id
+        ).where(
+            KeywordSet.project_id == project_id
+        ).order_by(Keyword.id)
+        
+        result = await db.stream(stmt)
+        async for kw, kset in result:
+            out = io.StringIO()
+            writer = csv.writer(out)
+            writer.writerow([
+                str(kw.id),
+                kset.name,
+                kw.term,
+                kw.country,
+                kw.language,
+                str(kw.volume) if kw.volume is not None else "",
+                str(kw.difficulty) if kw.difficulty is not None else "",
+                str(kw.cpc) if kw.cpc is not None else "",
+                kw.intent.value if hasattr(kw.intent, 'value') else str(kw.intent),
+                str(kw.is_tracked)
+            ])
+            yield out.getvalue()
+
+    return StreamingResponse(iter_csv(), media_type="text/csv", headers={
+        "Content-Disposition": f"attachment; filename=project_{project_id}_keywords.csv"
+    })
+

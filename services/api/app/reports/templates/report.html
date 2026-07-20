@@ -5,8 +5,8 @@
     <title>SEO Audit Report - {{ project_name }}</title>
     <style>
         :root {
-            --primary-color: #1e3a8a;
-            --secondary-color: #3b82f6;
+            --primary-color: {{ theme_primary_color | default('#1e3a8a', true) }};
+            --secondary-color: {{ theme_accent_color | default('#3b82f6', true) }};
             --text-color: #1f2937;
             --bg-color: #f8fafc;
             --font-family: 'Inter', 'Helvetica', sans-serif;
@@ -109,12 +109,18 @@
 
     <!-- Cover Page -->
     <div class="cover-page">
+        {% if theme_logo_url %}
+        <img src="{{ theme_logo_url }}" alt="{{ theme_agency_name | default('Agency Logo') }}" style="max-height: 100px; margin-bottom: 20px;">
+        {% endif %}
         <div class="cover-title">SEO Audit Report</div>
         <div class="cover-subtitle">{{ project_name }} ({{ domain }})</div>
         <div class="score-circle">
             {{ score }}
         </div>
         <p>Generated on: {{ date }}</p>
+        {% if theme_agency_name %}
+        <p>Prepared by: <strong>{{ theme_agency_name }}</strong></p>
+        {% endif %}
     </div>
 
     <!-- Top Priorities -->

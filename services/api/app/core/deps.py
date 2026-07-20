@@ -47,7 +47,10 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 # Auth schemes
-bearer_scheme = HTTPBearer(auto_error=False)
+bearer_scheme = HTTPBearer(
+    auto_error=False, 
+    description="Programmatic access uses API Keys. Format: `Bearer rp_live_<prefix>.<secret>`. For users, use the JWT Access Token."
+)
 x_org_id_header = APIKeyHeader(name="X-Org-Id", auto_error=False)
 
 async def get_current_user(
