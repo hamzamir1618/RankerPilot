@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.models import User, Organization, Project, Membership, RoleEnum, Audit, AuditStatusEnum
 from app.services.credits import credit, get_balance
 from app.workers.pipelines import async_crawl_site
+from app.services.auth_service import create_access_token
 
 @pytest.fixture
 async def credits_setup_data(db: AsyncSession):
@@ -53,7 +54,8 @@ async def test_credit_concurrency_locking(client: AsyncClient, db: AsyncSession,
     await db.commit()
     
     # We need an authenticated client for the owner
-    client.headers = {"Authorization": f"Bearer mock_token_for_{owner_id}"}
+    token = create_access_token(owner_id)
+    client.headers = {"Authorization": f"Bearer {token}"}
     
     # Send 3 concurrent requests
     async def create_audit_req():
@@ -81,7 +83,8 @@ async def test_credit_concurrency_locking(client: AsyncClient, db: AsyncSession,
 async def test_402_shape(client: AsyncClient, db: AsyncSession, credits_setup_data):
     proj_id = credits_setup_data["proj_id"]
     owner_id = credits_setup_data["owner_id"]
-    client.headers = {"Authorization": f"Bearer mock_token_for_{owner_id}"}
+    token = create_access_token(owner_id)
+    client.headers = {"Authorization": f"Bearer {token}"}
     
     # Balance is 0
     res = await client.post(f"/v1/projects/{proj_id}/audits", json={
@@ -112,7 +115,8 @@ async def test_refund_path(client: AsyncClient, db: AsyncSession, credits_setup_
     credit(db, org_id, 100, "Fund for refund test")
     await db.commit()
     
-    client.headers = {"Authorization": f"Bearer mock_token_for_{owner_id}"}
+    token = create_access_token(owner_id)
+    client.headers = {"Authorization": f"Bearer {token}"}
     
     # Create audit (debits 50)
     res = await client.post(f"/v1/projects/{proj_id}/audits", json={
@@ -153,7 +157,8 @@ async def test_admin_top_up_permissions(client: AsyncClient, db: AsyncSession, c
     member_id = credits_setup_data["member_id"]
     
     # Member tries to top up
-    client.headers = {"Authorization": f"Bearer mock_token_for_{member_id}"}
+    member_token = create_access_token(member_id)
+    client.headers = {"Authorization": f"Bearer {member_token}"}
     res = await client.post(f"/v1/organizations/{org_id}/credits/top-up", json={
         "amount": 500,
         "reason": "Top up"
@@ -161,7 +166,8 @@ async def test_admin_top_up_permissions(client: AsyncClient, db: AsyncSession, c
     assert res.status_code == 403
     
     # Owner tries to top up
-    client.headers = {"Authorization": f"Bearer mock_token_for_{owner_id}"}
+    owner_token = create_access_token(owner_id)
+    client.headers = {"Authorization": f"Bearer {owner_token}"}
     res = await client.post(f"/v1/organizations/{org_id}/credits/top-up", json={
         "amount": 500,
         "reason": "Top up"

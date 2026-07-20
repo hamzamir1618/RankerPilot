@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 from app.workers.beat_schedule import get_jitter_hour
 from app.services.drift import check_drift
-from app.models.models import SharedReportToken, Audit, AuditStatusEnum, AuditModeEnum
+from app.models.models import SharedReportToken, Audit, AuditStatusEnum, AuditModeEnum, Organization, Project
 from app.core.db_partitions import create_future_partitions
 
 def test_beat_jitter_distribution():
@@ -57,15 +57,24 @@ def test_drift_rules_concrete():
 async def test_shared_token(client: AsyncClient, db: AsyncSession):
     # Setup some dummy data without going through endpoints to save fixture complexity
     # Assumes db is transactional fixture
+    org_id = uuid.uuid4()
+    org = Organization(id=org_id, name="Shared Org")
+    db.add(org)
+    
+    proj_id = uuid.uuid4()
+    proj = Project(id=proj_id, org_id=org_id, domain="shared.com", name="Shared Proj")
+    db.add(proj)
+    await db.flush()
+    
     audit_id = uuid.uuid4()
     audit = Audit(
         id=audit_id,
-        project_id=uuid.uuid4(),
+        project_id=proj_id,
         status=AuditStatusEnum.done,
         mode=AuditModeEnum.full,
         page_limit=1,
         root_url="https://shared.com",
-        created_by=uuid.uuid4(),
+        created_by=None,
         score=100.0,
         category_scores={}
     )
