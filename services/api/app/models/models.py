@@ -122,7 +122,7 @@ class Audit(Base):
     started_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
     finished_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
 
 class Page(Base):
     __tablename__ = "pages"
@@ -213,6 +213,7 @@ class Keyword(Base):
     cpc: Mapped[float | None] = mapped_column(Numeric, nullable=True)
     intent: Mapped[KeywordIntentEnum | None] = mapped_column(String, nullable=True)
     opportunity_score: Mapped[float | None] = mapped_column(Numeric, nullable=True)
+    is_tracked: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     serp_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     refreshed_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
 
@@ -261,3 +262,20 @@ class ApiKey(Base):
     hash: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     last_used_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+
+class ProjectSchedule(Base):
+    __tablename__ = "project_schedules"
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"), primary_key=True)
+    audit_cadence: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    rank_cadence: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+class SharedReportToken(Base):
+    __tablename__ = "shared_report_tokens"
+    token: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    audit_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("audits.id"), nullable=False)
+    expires_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    revoked: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
+    created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
+

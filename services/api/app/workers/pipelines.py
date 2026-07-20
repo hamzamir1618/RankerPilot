@@ -150,16 +150,29 @@ async def async_crawl_site(audit_id_str: str, url: str):
             await ctx.close()
         await browser.close()
         
-    # Check if partial
+    # Check if partial or failed
     async with async_session_factory() as db:
         audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
         if audit:
-            if time.time() - start_time > budget_seconds and crawled_count < page_limit:
+            if crawled_count == 0:
+                audit.status = AuditStatusEnum.failed
+                audit.error = "Failed to crawl any pages (e.g. DNS failure or blocked)."
+                
+                # Issue refund
+                project = await db.scalar(select(Project).where(Project.id == audit.project_id))
+                if project:
+                    from app.services.credits import refund_transaction
+                    await refund_transaction(db, project.org_id, ref_type="audit", ref_id=audit_id, reason="Audit failed immediately")
+            elif time.time() - start_time > budget_seconds and crawled_count < page_limit:
                 audit.status = AuditStatusEnum.partial
                 audit.error = f"Budget exceeded. Crawled {crawled_count}/{page_limit} pages."
             else:
                 audit.status = AuditStatusEnum.analyzing
             await db.commit()
+
+    if crawled_count == 0:
+        publish_event_sync(audit_id_str, "crawl.failed", {"error": "No pages crawled"})
+        raise RuntimeError("Crawl failed: 0 pages retrieved.")
 
     publish_event_sync(audit_id_str, "crawl.completed", {"pages_crawled": crawled_count})
     return audit_id_str
@@ -228,6 +241,7 @@ def run_agents_chord(self, result: dict):
     pipeline = chain(
         c,
         compute_score.s(),  # type: ignore
+        check_drift_task.s(), # type: ignore
         finalize_audit.s()  # type: ignore
     )
     
@@ -421,6 +435,25 @@ async def async_finalize_audit(audit_id_str: str):
 @shared_task(bind=True, name="app.workers.pipelines.finalize_audit")
 def finalize_audit(self, audit_id_str: str):
     return asyncio.run(async_finalize_audit(audit_id_str))
+
+async def async_check_drift_task(audit_id_str: str):
+    audit_id = uuid.UUID(audit_id_str)
+    async with async_session_factory() as db:
+        audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
+        if not audit:
+            return audit_id_str
+        
+        result = await db.execute(select(Page).where(Page.audit_id == audit_id))
+        pages = list(result.scalars().all())
+        
+        from app.services.drift import detect_and_store_drift
+        await detect_and_store_drift(db, audit.project_id, pages)
+        
+    return audit_id_str
+
+@shared_task(bind=True, name="app.workers.pipelines.check_drift_task")
+def check_drift_task(self, audit_id_str: str):
+    return asyncio.run(async_check_drift_task(audit_id_str))
 
 def start_audit_pipeline(audit_id: uuid.UUID, url: str, mode: str):
     audit_id_str = str(audit_id)

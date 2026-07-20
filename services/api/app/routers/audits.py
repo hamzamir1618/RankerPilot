@@ -12,8 +12,11 @@ from app.workers.pipelines import start_audit_pipeline
 from app.crawler.validator import validate_target_url, SSRFViolation
 from app.core.rate_limit import redis_client
 from sqlalchemy import case, desc
-from app.crawler.discovery import normalize_url
 from app.workers.reports import generate_report_task
+from app.crawler.discovery import normalize_url
+from app.core.billing import COST_TABLE
+from app.services.credits import get_balance, debit
+from app.models.models import Organization
 import io
 import csv
 from fastapi.responses import StreamingResponse
@@ -46,17 +49,48 @@ async def create_audit(
     except SSRFViolation as e:
         raise HTTPException(status_code=400, detail=str(e))
         
-    audit = Audit(
-        id=uuid.uuid4(),
-        project_id=project_id,
-        status=AuditStatusEnum.queued,
-        mode=AuditModeEnum[mode_str],
-        page_limit=page_limit,
-        root_url=url,
-        created_by=user.id
-    )
-    db.add(audit)
-    await db.commit()
+    required_cost = COST_TABLE.get(f"audit_{mode_str}", 50)
+    
+    # Atomic transaction for credit debit
+    try:
+        # Lock the Organization row to serialize concurrent requests for this org
+        await db.execute(
+            select(Organization)
+            .where(Organization.id == project.org_id)
+            .with_for_update()
+        )
+        
+        current_balance = await get_balance(db, project.org_id)
+        
+        if current_balance < required_cost:
+            raise HTTPException(
+                status_code=402, 
+                detail={
+                    "error": "Payment Required",
+                    "current_balance": current_balance, 
+                    "required": required_cost, 
+                    "shortfall": required_cost - current_balance
+                }
+            )
+            
+        audit = Audit(
+            id=uuid.uuid4(),
+            project_id=project_id,
+            status=AuditStatusEnum.queued,
+            mode=AuditModeEnum[mode_str],
+            page_limit=page_limit,
+            root_url=url,
+            created_by=user.id
+        )
+        db.add(audit)
+        
+        # Debit the account
+        debit(db, project.org_id, required_cost, f"Audit {audit.id}", ref_type="audit", ref_id=audit.id)
+        
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
     
     # Enqueue pipeline
     start_audit_pipeline(audit.id, url, mode_str)
