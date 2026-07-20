@@ -43,7 +43,7 @@ async def test_webhook_crud(client: AsyncClient, db: AsyncSession, webhook_setup
     )
     assert create_res.status_code == 200
     webhook_id = create_res.json()["id"]
-    assert create_res.json()["url"] == "https://example.com/hook/"
+    assert create_res.json()["url"] == "https://example.com/hook"
 
     list_res = await client.get(f"/v1/organizations/{org_id}/webhooks", headers=user_headers)
     assert list_res.status_code == 200
