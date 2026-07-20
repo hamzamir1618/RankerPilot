@@ -21,6 +21,19 @@ import io
 import csv
 from fastapi.responses import StreamingResponse
 
+async def get_audit_for_org(
+    audit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db)
+) -> Audit:
+    audit = await db.scalar(
+        select(Audit)
+        .join(Project, Project.id == Audit.project_id)
+        .where(Audit.id == audit_id)
+    )
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    return audit
+
 router = APIRouter(prefix="/v1", tags=["audits"])
 
 @router.post("/projects/{project_id}/audits", status_code=202)
@@ -99,13 +112,9 @@ async def create_audit(
 
 @router.get("/audits/{audit_id}", response_model=AuditResponse)
 async def get_audit(
-    audit_id: uuid.UUID,
-    db: AsyncSession = Depends(get_db),
+    audit: Audit = Depends(get_audit_for_org),
     user=Depends(get_current_user)
 ):
-    audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
-    if not audit:
-        raise HTTPException(status_code=404, detail="Audit not found")
     return audit
 
 @router.get("/audits/{audit_id}/findings", response_model=List[FindingResponse])
@@ -116,6 +125,7 @@ async def get_findings(
     cursor: Optional[str] = None,
     sort: Optional[str] = "action_plan",
     db: AsyncSession = Depends(get_db),
+    audit: Audit = Depends(get_audit_for_org),
     user=Depends(get_current_user)
 ):
     stmt = select(Finding).where(Finding.audit_id == audit_id)
@@ -162,6 +172,7 @@ async def get_findings(
 async def get_action_plan(
     audit_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    audit: Audit = Depends(get_audit_for_org),
     user=Depends(get_current_user)
 ):
     # Fetch top findings ordered by action plan criteria
@@ -196,15 +207,13 @@ async def get_audit_diff(
     audit_id: uuid.UUID,
     other_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    audit: Audit = Depends(get_audit_for_org),
     user=Depends(get_current_user)
 ):
     # audit_id is newer, other_id is older
-    newer = await db.scalar(select(Audit).where(Audit.id == audit_id))
-    older = await db.scalar(select(Audit).where(Audit.id == other_id))
+    newer = audit
+    older = await get_audit_for_org(other_id, db)
     
-    if not newer or not older:
-        raise HTTPException(status_code=404, detail="Audit not found")
-        
     score_delta = (newer.score or 0.0) - (older.score or 0.0)
     
     # Load pages to get URLs
@@ -256,6 +265,7 @@ async def get_audit_diff(
 async def get_pages(
     audit_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    audit: Audit = Depends(get_audit_for_org),
     user=Depends(get_current_user)
 ):
     stmt = select(Page).where(Page.audit_id == audit_id)
@@ -282,12 +292,12 @@ async def sse_events(audit_id: str, request: Request):
     return EventSourceResponse(event_generator())
 
 @router.post("/audits/{audit_id}/report", status_code=202)
-async def request_report(audit_id: uuid.UUID, user=Depends(get_current_user)):
+async def request_report(audit_id: uuid.UUID, audit: Audit = Depends(get_audit_for_org), user=Depends(get_current_user)):
     generate_report_task.delay(str(audit_id)) # type: ignore
     return {"status": "accepted"}
 
 @router.get("/reports/{audit_id}")
-async def get_report(audit_id: uuid.UUID, user=Depends(get_current_user)):
+async def get_report(audit_id: uuid.UUID, audit: Audit = Depends(get_audit_for_org), user=Depends(get_current_user)):
     # Check if the report is ready in Redis
     url = await redis_client.get(f"report_url:{str(audit_id)}")
     if url:
@@ -298,6 +308,7 @@ async def get_report(audit_id: uuid.UUID, user=Depends(get_current_user)):
 async def export_csv(
     audit_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    audit: Audit = Depends(get_audit_for_org),
     user=Depends(get_current_user)
 ):
     async def iter_csv():
