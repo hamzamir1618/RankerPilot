@@ -153,6 +153,10 @@ async def test_refund_path(client: AsyncClient, db: AsyncSession, credits_setup_
         
     monkeypatch.setattr("app.workers.pipelines.fetch_page", mock_fetch_page)
     
+    # Also patch the worker's DB session factory to use the test DB
+    from tests.conftest import TestingSessionLocal
+    monkeypatch.setattr("app.workers.pipelines.async_session_factory", TestingSessionLocal)
+    
     # Run the worker synchronously
     try:
         await async_crawl_site(audit_id_str, "https://credits.com")
