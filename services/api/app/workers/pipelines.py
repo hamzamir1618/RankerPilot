@@ -114,7 +114,14 @@ async def async_crawl_site(audit_id_str: str, url: str):
                 break
 
             publish_event_sync(audit_id_str, "crawl.progress", {"url": current_url})
-            res = await fetch_page(current_url, audit_id, browser_context=browser_context)
+            
+            try:
+                res = await fetch_page(current_url, audit_id, browser_context=browser_context)
+            except Exception as e:
+                publish_event_sync(audit_id_str, "crawl.error", {"url": current_url, "error": str(e)})
+                queue.task_done()
+                continue
+                
             crawled_count += 1
             
             async with async_session_factory() as db:
