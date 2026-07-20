@@ -7,7 +7,7 @@ Create Date: 2026-07-20 12:00:00.000000
 """
 from typing import Sequence, Union
 
-from alembic import op
+from alembic import op # type: ignore
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -30,6 +30,8 @@ def upgrade() -> None:
     sa.Column('org_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('url', sa.Text(), nullable=False),
     sa.Column('secret', sa.String(length=64), nullable=False),
+    sa.Column('events', postgresql.ARRAY(sa.String()), nullable=False),
+    sa.Column('is_active', sa.Boolean(), server_default=sa.text('true'), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['org_id'], ['organizations.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -39,8 +41,10 @@ def upgrade() -> None:
     op.create_table('webhook_deliveries',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('webhook_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('event_type', sa.String(length=60), nullable=False),
     sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
-    sa.Column('status_code', sa.Integer(), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=False),
+    sa.Column('response_status', sa.Integer(), nullable=True),
     sa.Column('error', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['webhook_id'], ['webhooks.id'], ),

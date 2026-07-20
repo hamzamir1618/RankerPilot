@@ -15,6 +15,7 @@ class AuditContext:
     industry: str
     token_budget: int = 16000
     root_url: str = ""
+    project_id: str = ""
     
     # Stubbed clients
     llm_client: Any = None

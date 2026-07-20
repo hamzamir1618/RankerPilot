@@ -202,6 +202,7 @@ async def async_detect_industry(audit_id_str: str):
         pages_resp = [PageResponse.model_validate(p) for p in pages_db]
         
         audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
+        project_id = str(audit.project_id) if audit else ""
         
     ctx = AuditContext(
         audit_id=audit_id_str,
@@ -209,7 +210,8 @@ async def async_detect_industry(audit_id_str: str):
         site_graph={},
         robots_txt=None,
         sitemap_urls=[],
-        industry="saas" # unknown initially
+        industry="saas", # unknown initially
+        project_id=project_id
     )
     
     res = detect_industry_service(ctx)
@@ -273,6 +275,7 @@ async def async_run_agent(agent_id: str, ctx_dict: dict):
             
             audit = await db.scalar(select(Audit).where(Audit.id == audit_id))
             root_url = audit.root_url if audit else ""
+            project_id = str(audit.project_id) if audit else ""
 
         site_graph = {}
         for p in pages_resp:
@@ -287,7 +290,8 @@ async def async_run_agent(agent_id: str, ctx_dict: dict):
             site_graph=site_graph,
             robots_txt=None,
             sitemap_urls=[],
-            industry=ctx_dict.get("industry", "saas")
+            industry=ctx_dict.get("industry", "saas"),
+            project_id=project_id
         )
         ctx.root_url = root_url
         
