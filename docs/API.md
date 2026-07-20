@@ -433,8 +433,8 @@ curl -X POST https://api.rankerpilot.app/v1/audits/.../share \
 **Success response — 200 OK:**
 ```json
 {
-  "share_token": "rpt_abc123def456ghi",
-  "url": "https://rankerpilot.app/shared/rpt_abc123def456ghi"
+  "share_token": "<GENERATED_SHARE_TOKEN>",
+  "url": "https://rankerpilot.app/shared/<GENERATED_SHARE_TOKEN>"
 }
 ```
 
