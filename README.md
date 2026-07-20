@@ -148,7 +148,7 @@ RankerPilot consists of four main pieces working together. When you view the das
 ## Support / Ownership
 
 For internal support, questions, or if the platform goes offline unexpectedly, please contact:
-**[Insert System Owner Name / Email Here]**
+**[hamzamirexe@gmail.com]**
 
 ---
 
