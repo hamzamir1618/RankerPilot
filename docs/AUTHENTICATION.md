@@ -32,7 +32,7 @@ Include the API key in the `Authorization` header of your HTTP requests as a `Be
 **Example Request:**
 ```bash
 curl -X GET "https://api.rankerpilot.com/v1/projects/" \
-  -H "Authorization: Bearer rp_live_abc123.your_long_secret_key_string_here"
+  -H "Authorization: Bearer <YOUR_API_KEY>"
 ```
 
 If the API key is missing, invalid, or revoked, the API will respond with a `401 Unauthorized`.
