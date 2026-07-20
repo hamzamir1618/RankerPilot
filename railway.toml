@@ -1,0 +1,26 @@
+[project]
+name = "rankerpilot"
+
+[[services]]
+name = "api"
+builder = "DOCKERFILE"
+dockerfilePath = "docker/api.Dockerfile"
+source = "/"
+[services.env]
+PORT = "8000"
+
+[[services]]
+name = "worker"
+builder = "DOCKERFILE"
+dockerfilePath = "docker/worker.Dockerfile"
+source = "/"
+[services.env]
+CELERY_CONCURRENCY = "4"
+
+[[services]]
+name = "web"
+builder = "DOCKERFILE"
+dockerfilePath = "apps/web/Dockerfile"
+source = "/"
+[services.env]
+PORT = "3000"

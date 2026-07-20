@@ -19,6 +19,9 @@ COPY services/api/app ./app
 COPY services/api/alembic ./alembic
 COPY services/api/alembic.ini ./
 
+COPY services/api/scripts/start_api.sh ./scripts/start_api.sh
+RUN chmod +x ./scripts/start_api.sh
+
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["./scripts/start_api.sh"]

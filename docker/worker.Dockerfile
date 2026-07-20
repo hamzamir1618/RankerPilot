@@ -13,4 +13,5 @@ RUN uv sync --no-dev
 
 COPY services/api/app ./app
 
-CMD ["celery", "-A", "app.workers", "worker", "-Q", "crawl,agents,reports", "-c", "4"]
+# Start celery, falling back to 4 concurrent workers if not specified
+CMD ["sh", "-c", "celery -A app.workers worker -Q crawl,agents,reports -c ${CELERY_CONCURRENCY:-4}"]
