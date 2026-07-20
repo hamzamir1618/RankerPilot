@@ -28,8 +28,8 @@ def generate_pdf_report(context: dict) -> bytes:
         # Fallback for systems without GTK3 (like CI/Windows)
         return b"%PDF-1.4\nMock PDF Content\n"
 
-    font_config = FontConfiguration()
-    html = HTML(string=rendered_html)
+    font_config = FontConfiguration() # type: ignore
+    html = HTML(string=rendered_html) # type: ignore
     
     # Render PDF bytes
     pdf_bytes = html.write_pdf(font_config=font_config)

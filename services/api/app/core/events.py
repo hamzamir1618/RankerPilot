@@ -46,7 +46,7 @@ async def _trigger_webhooks(audit_id: str, event_type: str, payload: dict):
         
         for w in webhooks:
             if event_type in w.events or "*" in w.events:
-                dispatch_webhook_task.delay(str(w.id), payload, event_type)
+                dispatch_webhook_task.delay(str(w.id), payload, event_type) # type: ignore
 
 # Celery tasks are synchronous by default in Celery.
 # We need a synchronous helper to publish events from celery workers if they run synchronously.

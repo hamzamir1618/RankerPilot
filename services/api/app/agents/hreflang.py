@@ -24,7 +24,9 @@ class HreflangAgent(BaseAgent):
         invalid_format = 0
         
         for tag in hreflang_tags:
-            lang = tag.get("hreflang", "").lower()
+            lang_val = tag.get("hreflang", "")
+            lang = lang_val[0] if isinstance(lang_val, list) else lang_val
+            lang = str(lang).lower() if lang else ""
             if lang == "x-default":
                 has_x_default = True
             elif "_" in lang:

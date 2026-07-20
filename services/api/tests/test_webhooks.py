@@ -2,16 +2,38 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-@pytest.mark.asyncio
-async def test_webhook_crud(client: AsyncClient, db: AsyncSession, admin_token_headers: dict):
-    org_res = await client.post("/v1/admin/organizations", json={"name": "Webhook Org"}, headers=admin_token_headers)
-    org_id = org_res.json()["id"]
+import uuid
+from app.models.models import Organization, User, Membership, RoleEnum
 
-    user_res = await client.post(
-        "/v1/auth/register",
-        json={"email": "webhook@example.com", "password": "TestPassword123!", "org_id": org_id}
-    )
-    user_token = user_res.json()["access_token"]
+@pytest.fixture
+async def webhook_setup_data(db: AsyncSession):
+    org_id = uuid.uuid4()
+    user_id = uuid.uuid4()
+    
+    org = Organization(id=org_id, name="Webhook Org")
+    db.add(org)
+    
+    user = User(id=user_id, email=f"webhook_{user_id.hex}@test.com")
+    db.add(user)
+    
+    await db.flush()
+    
+    db.add(Membership(user_id=user_id, org_id=org_id, role=RoleEnum.owner))
+    await db.commit()
+    
+    return {
+        "org_id": str(org_id),
+        "user_id": str(user_id)
+    }
+
+@pytest.mark.asyncio
+async def test_webhook_crud(client: AsyncClient, db: AsyncSession, webhook_setup_data):
+    from app.services.auth_service import create_access_token
+    
+    org_id = webhook_setup_data["org_id"]
+    user_id = webhook_setup_data["user_id"]
+    
+    user_token = create_access_token(uuid.UUID(user_id))
     user_headers = {"Authorization": f"Bearer {user_token}"}
 
     create_res = await client.post(
@@ -34,15 +56,13 @@ async def test_webhook_crud(client: AsyncClient, db: AsyncSession, admin_token_h
     assert len(list_res2.json()) == 0
 
 @pytest.mark.asyncio
-async def test_ssrf_protection(client: AsyncClient, admin_token_headers: dict):
-    org_res = await client.post("/v1/admin/organizations", json={"name": "SSRF Org"}, headers=admin_token_headers)
-    org_id = org_res.json()["id"]
+async def test_ssrf_protection(client: AsyncClient, webhook_setup_data):
+    from app.services.auth_service import create_access_token
 
-    user_res = await client.post(
-        "/v1/auth/register",
-        json={"email": "ssrf@example.com", "password": "TestPassword123!", "org_id": org_id}
-    )
-    user_token = user_res.json()["access_token"]
+    org_id = webhook_setup_data["org_id"]
+    user_id = webhook_setup_data["user_id"]
+    
+    user_token = create_access_token(uuid.UUID(user_id))
     user_headers = {"Authorization": f"Bearer {user_token}"}
 
     create_res = await client.post(
